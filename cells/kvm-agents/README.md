@@ -21,7 +21,7 @@ qemu and lima are in the image, pinned to the host's lima version, so a
 guest. That is also why this cell names a `user:` where its sibling does not —
 limactl refuses to run as root, and a cell is root in its container until the
 definition says otherwise, so work here happens as `cell`. The guest's memory and disk come out of this cell's, which is why it
-asks for 6GiB and 80GiB where its sibling asks for 4 and 40.
+asks for 6GiB and 80GiB where its sibling asks for 8 and 40.
 
 That is also the one thing to watch on the host: a guest's memory is a file on
 `/dev/shm`, which holds 7.7GiB, so this cell and `web-agents` do not both fit

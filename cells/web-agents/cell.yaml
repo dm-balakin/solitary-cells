@@ -62,7 +62,10 @@ network:
     - docker.io              # the base image
     - docker.com             # and the CDN it is served from
 
+# Memory is the ceiling on the host rather than a preference: a machine's
+# memory is a file on the host's /dev/shm, so this has to fit there — raising
+# it means raising /dev/shm first, and up refuses outright when it does not fit.
 vm:
   cpus: 4
-  memory: 4GiB
+  memory: 8GiB
   disk: 40GiB
