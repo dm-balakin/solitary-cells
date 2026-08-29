@@ -1,0 +1,7 @@
+# Defaults for every cell. A cell's own cell.yaml overrides what it sets here.
+
+# Who cells commit as. git wants an author and a committer, with a name and an
+# email each; solitary fills in all four from these two.
+git:
+  name: Your Name
+  email: you@example.com

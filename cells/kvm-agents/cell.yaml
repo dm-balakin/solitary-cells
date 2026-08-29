@@ -1,0 +1,89 @@
+description: >-
+  Where solitary is developed: web-agents plus its Go toolchain, and qemu
+  and lima behind /dev/kvm, so a build made here can boot a machine here
+  rather than on the host.
+
+build: ./Containerfile
+
+# Work happens as this user rather than as the container's root, because
+# limactl refuses to run as root and this cell exists to run it. The image
+# creates the user; solitary maps the cell's home onto it.
+user: cell
+
+# Sets up what has to live in the cell's home — the MCP servers and pi's agent
+# directory — then keeps the container alive.
+command: /usr/local/bin/cell-init; sleep infinity
+
+# gh reads GH_TOKEN. The agents are not here: Claude Code and pi both log in
+# inside the cell and keep their credentials in /home/cell, which lives on the
+# machine's disk and outlives the container. The git identity is not here
+# either: it comes from git: in ~/.config/solitary/config.yaml.
+secrets:
+  GH_TOKEN:
+    description: a token gh and git push authenticate with
+
+# Only this port reaches the host. Everything else the cell listens on stays
+# inside it.
+ports:
+  - 3000
+
+# The one device this cell is given. The host allows nested virtualisation and
+# the machine's kernel has the node, so a guest started in here is a third
+# level: host, cell, and whatever the cell boots. up hands the node to the
+# machine's user at every start, which is what makes it openable from inside a
+# rootless container.
+devices:
+  - /dev/kvm
+
+# What this cell may reach. Everything else — the rest of the internet, the
+# host, the local network — is refused, and an unlisted name does not even
+# resolve. A domain covers its subdomains, so this list is shorter than the set
+# of hosts actually contacted.
+#
+# The build needs most of these: the image is built inside the machine, behind
+# the same firewall, so a package source missing here fails the build rather
+# than the cell.
+network:
+  # And it leaves through Surfshark rather than this host's connection. The
+  # configuration is not here: it holds a private key, so it is yours to
+  # provide and is kept out of anything this directory is copied into.
+  #
+  # With the tunnel up, what is allowed below is reachable through it and
+  # nowhere else — if it drops, the cell reaches nothing at all.
+  vpn: ./vpn.conf
+
+  # Forwarded to a public resolver rather than the host's, so the machine has
+  # no reason to reach the host at all. Every name this cell resolves is one
+  # of the few below. Once the tunnel is up these queries go through it too,
+  # so 1.1.1.1 is asked from Berlin rather than from here.
+  resolvers:
+    - 1.1.1.1
+
+  allow:
+    - anthropic.com          # Claude Code: api, console, telemetry
+    - claude.ai              # signing in
+    - claude.com             # what Claude Code reaches for docs and account
+    - chatgpt.com            # pi's default provider: the Codex backend
+    - openai.com             # and the auth and api hosts behind it
+    - pi.dev                 # pi's version check and changelog
+    - mcp.context7.com       # the context7 MCP server, for both agents
+    - github.com             # gh, git clones, releases, the apt repo for gh
+    - githubusercontent.com  # raw scripts and release assets
+    - npmjs.org              # npm, and what mason installs from it
+    - nodejs.org             # the node nvm installs
+    - ubuntu.com             # apt
+    - docker.io              # the base image
+    - docker.com             # and the CDN it is served from
+    - go.dev                 # the go toolchain's download page
+    - dl.google.com          # and the tarball it redirects to
+    - golang.org             # the module proxy and the checksum database
+
+# Bigger than the sibling cell, because a guest booted in here comes out of
+# this: its memory is this machine's memory and its disk is this disk. Memory
+# is the ceiling on the host rather than a preference — a guest's memory is a
+# file on the host's /dev/shm, which holds 7.7GiB here, so this cell and
+# web-agents cannot both be up at once.
+vm:
+  cpus: 4
+  memory: 6GiB
+  disk: 80GiB

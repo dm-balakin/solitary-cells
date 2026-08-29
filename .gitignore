@@ -1,0 +1,8 @@
+# Written by solitary, holds the secret values themselves.
+cells/*/.env
+
+# A VPN credential — yours, not the cell's. Each cell.yaml points at its own.
+cells/*/vpn.conf
+
+# User-wide defaults, per machine. config.example.yaml is the template.
+/config.yaml

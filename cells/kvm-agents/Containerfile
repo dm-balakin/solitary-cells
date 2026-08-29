@@ -1,0 +1,294 @@
+FROM docker.io/library/ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Without this the image has no locale at all, and every terminal program falls
+# back to ASCII: tmux rewrites each wide character as an underscore, so workmux's
+# status glyphs and anything else non-ASCII arrive mangled. C.UTF-8 is built into
+# glibc, so it needs no locale package.
+ENV LANG=C.UTF-8
+
+# Base tools. ripgrep and fd are what Claude Code reaches for; the rest is what
+# any of this needs to fetch and verify anything else.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates curl git gnupg jq less ripgrep fd-find unzip tzdata \
+      build-essential python3 ncurses-term \
+ && rm -rf /var/lib/apt/lists/* \
+ # Debian and Ubuntu ship fd as fdfind; everything that looks for it, including
+ # LazyVim, expects the real name.
+ && ln -s /usr/bin/fdfind /usr/local/bin/fd
+
+# GitHub CLI, from its own apt repository rather than a distro snapshot.
+RUN mkdir -p -m 755 /etc/apt/keyrings \
+ && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends gh \
+ && rm -rf /var/lib/apt/lists/*
+
+# Let git push over https authenticate the way gh does, using GH_TOKEN from the
+# environment. This belongs to the image rather than to something set up by hand
+# inside the cell, so it survives the cell being rebuilt from scratch. The
+# identity to commit under is not here: git reads that from GIT_AUTHOR_* and
+# GIT_COMMITTER_*, which cell.yaml declares.
+RUN git config --system credential."https://github.com".helper '!/usr/bin/gh auth git-credential' \
+ && git config --system credential."https://gist.github.com".helper '!/usr/bin/gh auth git-credential'
+
+# nvm, installed system-wide so both this build and later shells see it.
+ENV NVM_DIR=/usr/local/nvm
+ENV NVM_VERSION=v0.40.6
+ENV NODE_VERSION=24
+
+RUN mkdir -p "$NVM_DIR" \
+ && curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash \
+ && . "$NVM_DIR/nvm.sh" \
+ && nvm install "$NODE_VERSION" \
+ && nvm alias default "$NODE_VERSION" \
+ # A stable path to whichever v24.x nvm resolved, so PATH does not have to
+ # name the patch version.
+ && ln -s "$NVM_DIR/versions/node/$(nvm version default)" /usr/local/node
+
+ENV PATH=/usr/local/node/bin:$PATH
+
+# Make nvm itself usable in interactive shells, not just the pinned default.
+# solitary opens a non-login shell, which reads /etc/bash.bashrc but not
+# /etc/profile.d, so wire up both.
+RUN printf '%s\n' \
+      'export NVM_DIR=/usr/local/nvm' \
+      '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' \
+      > /etc/profile.d/nvm.sh \
+ && echo '. /etc/profile.d/nvm.sh' >> /etc/bash.bashrc
+
+# The prompt, wired up the same way and appended after Ubuntu's own PS1 so that
+# it wins.
+COPY prompt.sh /etc/profile.d/solitary-prompt.sh
+RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
+
+# The agents. Claude Code tracks latest: it updates itself in place anyway, so
+# pinning here buys nothing. pi is pinned to the host's version, like tmux and
+# nvim below — its extensions are written against this API and a newer pi could
+# refuse to load them.
+ENV PI_VERSION=0.84.2
+
+RUN npm install -g @anthropic-ai/claude-code \
+ && npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}" \
+ && npm cache clean --force
+
+# tmux, built from source to match the host's version. Ubuntu ships 3.4, which
+# does not know extended-keys-format; tmux stops reading a config file at the
+# first unknown option, so on 3.4 everything below that line — the theme, the
+# key bindings, the plugins — is silently skipped.
+ENV TMUX_VERSION=3.7b
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libevent-dev libncurses-dev bison pkg-config \
+ && curl -fsSL -o /tmp/tmux.tar.gz \
+      "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" \
+ && tar -C /tmp -xzf /tmp/tmux.tar.gz \
+ && cd /tmp/tmux-${TMUX_VERSION} \
+ && ./configure \
+ && make -j"$(nproc)" \
+ && make install \
+ && cd / \
+ && rm -rf /tmp/tmux.tar.gz /tmp/tmux-${TMUX_VERSION} \
+ && rm -rf /var/lib/apt/lists/*
+
+# tmux is configured system-wide. It reads /etc/tmux.conf before anything in a
+# home directory, which is what makes this work here: the cell's home is a
+# mount from the machine and hides whatever the image puts under it.
+#
+# The plugins are cloned during the build rather than installed by TPM on first
+# run, so a fresh cell has a working status bar without pressing anything.
+ENV TMUX_PLUGIN_MANAGER_PATH=/etc/tmux/plugins/
+
+RUN mkdir -p /etc/tmux/plugins \
+ && git clone --depth 1 https://github.com/tmux-plugins/tpm /etc/tmux/plugins/tpm \
+ && git clone --depth 1 https://github.com/tmux-plugins/tmux-sensible /etc/tmux/plugins/tmux-sensible \
+ # Pinned: the theme is the visible half of this config, and it should not
+ # change because an image was rebuilt on a different day.
+ && git clone --depth 1 --branch v2.3.0 https://github.com/catppuccin/tmux /etc/tmux/plugins/tmux
+
+COPY tmux.conf /etc/tmux.conf
+COPY system-stats.sh /etc/tmux/system-stats.sh
+RUN chmod 0755 /etc/tmux/system-stats.sh
+
+# workmux, pinned to the version on the host. Its sandboxing is not configured:
+# the cell is already the boundary, and a Lima VM inside a Lima VM is not a
+# thing. It drives git worktrees and tmux windows here, nothing else.
+ENV WORKMUX_VERSION=v0.1.232
+
+RUN curl -fsSL https://raw.githubusercontent.com/raine/workmux/main/scripts/install.sh \
+      | WORKMUX_INSTALL_DIR=/usr/local/bin bash \
+ && workmux --version
+
+# Neovim, from the project's own tarball: Ubuntu's package is far too old for
+# LazyVim. The version matches the host's.
+ENV NVIM_VERSION=v0.12.4
+
+RUN curl -fsSL -o /tmp/nvim.tar.gz \
+      "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" \
+ && tar -C /opt -xzf /tmp/nvim.tar.gz \
+ && rm -f /tmp/nvim.tar.gz
+
+# nvim's config and plugins belong to the image, for the same reason as tmux's:
+# nothing under the home directory survives. A wrapper points the two XDG
+# directories that hold them at the image, and leaves state and cache alone so
+# that shada, undo history and the like still land in the home and outlive a new
+# container.
+RUN printf '%s\n' \
+      '#!/bin/sh' \
+      'export XDG_CONFIG_HOME=/opt/nvim/config' \
+      'export XDG_DATA_HOME=/opt/nvim/data' \
+      'exec /opt/nvim-linux-x86_64/bin/nvim "$@"' \
+      > /usr/local/bin/nvim \
+ && chmod 0755 /usr/local/bin/nvim
+
+ENV EDITOR=nvim VISUAL=nvim
+
+# The config and everything it needs to run: plugins, mason's tools, and the
+# treesitter parsers, all compiled here so that the first nvim in a fresh cell
+# opens an editor rather than an installer. The bootstrap fails the build if
+# any of it is missing, since a cell that has to fetch half an editor on first
+# open is the thing this avoids.
+COPY nvim-bootstrap.lua /opt/nvim/bootstrap.lua
+
+RUN mkdir -p /opt/nvim/config /opt/nvim/data \
+ && git clone --depth 1 https://github.com/dm-balakin/nvim-config /opt/nvim/config/nvim \
+ && timeout 600 nvim --headless "+Lazy! sync" +qa \
+ && timeout 1200 nvim --headless -c "luafile /opt/nvim/bootstrap.lua"
+
+# Go. The work this cell is for is a Go CLI, so the toolchain and the two tools
+# its Makefile and its workflows name are in the image rather than fetched into
+# a worktree: golangci-lint, which is both the linter and — through
+# `golangci-lint fmt` — the formatter, and goreleaser, which the release
+# configuration is checked with. The version matches the host's; go.mod asks
+# for less than this, and a module that asks for more downloads its own
+# toolchain through the proxy.
+ENV GO_VERSION=1.26.6
+ENV GOLANGCI_LINT_VERSION=2.13.2
+ENV GORELEASER_VERSION=2.18.0
+
+RUN curl -fsSL -o /tmp/go.tar.gz \
+      "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
+ && tar -C /usr/local -xzf /tmp/go.tar.gz \
+ && rm -f /tmp/go.tar.gz \
+ && curl -fsSL -o /tmp/golangci-lint.tar.gz \
+      "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz" \
+ && tar -C /tmp -xzf /tmp/golangci-lint.tar.gz \
+ && install -m 0755 "/tmp/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint" /usr/local/bin/golangci-lint \
+ && curl -fsSL -o /tmp/goreleaser.tar.gz \
+      "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz" \
+ && tar -C /tmp -xzf /tmp/goreleaser.tar.gz goreleaser \
+ && install -m 0755 /tmp/goreleaser /usr/local/bin/goreleaser \
+ && rm -rf /tmp/golangci-lint.tar.gz /tmp/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64 \
+      /tmp/goreleaser.tar.gz /tmp/goreleaser
+
+# GOPATH in the home rather than the image: the module cache and whatever `go
+# install` adds are then on the machine's disk, so a rebuilt container does not
+# download the world again.
+ENV GOPATH=/home/cell/go
+ENV PATH=/usr/local/go/bin:/home/cell/go/bin:$PATH
+
+# The website half of the repository is pnpm, and its version is pinned in
+# package.json for corepack to read. Enabling corepack here means a worktree
+# gets that version rather than whatever is installed; the prompt it would show
+# before downloading one has no one to answer it in an agent's shell.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable --install-directory /usr/local/node/bin
+
+# qemu and lima, so what is developed here can also be run here. solitary
+# drives a lima machine with podman inside it; cell.yaml passes in the node the
+# first of those needs — /dev/kvm — and this is the rest of it: an emulator to
+# open that node with, UEFI firmware for a guest to boot from, and the ssh
+# client lima talks to a machine over once it is up.
+#
+# A guest booted in here is the third level down: host, cell, guest. Its memory
+# and its disk come out of the cell's, which is why this cell asks for more of
+# both than its sibling.
+#
+# lima matches the host's version, like tmux and nvim: what is developed here
+# is the thing that drives it.
+ENV LIMA_VERSION=2.1.4
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      qemu-system-x86 qemu-utils ovmf openssh-client \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl -fsSL -o /tmp/lima.tar.gz \
+      "https://github.com/lima-vm/lima/releases/download/v${LIMA_VERSION}/lima-${LIMA_VERSION}-Linux-x86_64.tar.gz" \
+ && tar -C /usr/local -xzf /tmp/lima.tar.gz \
+ && rm -f /tmp/lima.tar.gz
+
+# The user work happens as. limactl refuses to run as root, and a cell is root
+# inside its container unless cell.yaml names someone else — so this image has
+# a user and cell.yaml names it. Everything runs as `cell`: the agents, tmux,
+# and the machines lima starts.
+#
+# The home this creates is hidden at run time by the mount from the machine,
+# which solitary maps onto this user. What does have to change is nvim's data
+# directory: the wrapper points XDG_DATA_HOME at the image, and lazy and mason
+# write there.
+RUN useradd --create-home --home-dir /home/cell --shell /bin/bash cell \
+ && chown -R cell:cell /opt/nvim
+
+# Statusline. The script and its settings both live outside /home/cell: that
+# path is a mount from the machine, so anything the build puts there is hidden
+# at run time. /etc/claude-code is Claude Code's managed settings location,
+# which it reads regardless of the home directory.
+# The statusline prints rate-limit reset times in local time, so the cell has
+# to agree with the host about what local means.
+ENV TZ=Europe/Belgrade
+
+COPY statusline.sh /usr/local/bin/claude-statusline
+RUN chmod 0755 /usr/local/bin/claude-statusline \
+ && mkdir -p /etc/claude-code
+
+# Managed settings carry the statusline and the workmux hooks that colour a
+# tmux window by what the agent is doing. ~/.claude/settings.json would be the
+# usual place for both; it is in the home directory, so it is not available to
+# the image, and 'workmux setup' cannot write it during a build either.
+COPY claude-settings.json /etc/claude-code/managed-settings.json
+
+# pi's configuration — settings, the focus-dark theme, the two extensions and
+# the skills, all as they are on the host. Claude Code has a managed-settings
+# location outside the home; pi does not, and everything it reads lives under
+# ~/.pi/agent, which is a mount from the machine. So the image parks it here
+# and cell-init links it in at start.
+COPY pi /opt/pi
+
+# The packages settings.json asks for, installed at build rather than by pi on
+# first run: a fresh cell should open an agent, not an npm install. To the
+# lockfile, so a rebuild gets the tree the host has rather than whatever the
+# ranges resolve to today.
+#
+# --legacy-peer-deps because that is how pi installs them itself: the packages
+# declare @earendil-works/pi-* as peers and get them from the pi they run
+# inside, so they are deliberately absent from the lockfile. Without the flag
+# npm calls the lockfile out of sync and refuses.
+RUN cd /opt/pi/npm \
+ && npm ci --legacy-peer-deps \
+ && npm cache clean --force
+
+# Applied at every container start, for the things that have to live in the
+# cell's home and so cannot be baked into the image.
+COPY cell-init.sh /usr/local/bin/cell-init
+RUN chmod 0755 /usr/local/bin/cell-init
+
+# The cell's home is a mount from the machine, so anything written here during
+# the build would be hidden at run time. Keep build-time state out of it.
+WORKDIR /home/cell
+
+RUN node --version && npm --version && gh --version && claude --version \
+ && pi --version && tmux -V && workmux --version && nvim --version | head -n 1 \
+ && go version && golangci-lint --version && goreleaser --version | head -n 3 \
+ && su cell -c 'limactl --version' && qemu-system-x86_64 --version | head -n 1 \
+ && test -d /opt/pi/npm/node_modules/pi-subagents \
+ && test -d /opt/pi/npm/node_modules/pi-web-access \
+ && test -d /opt/pi/npm/node_modules/pi-mcp-adapter \
+ && test -d /opt/nvim/data/nvim/lazy/LazyVim \
+ && test "$(ls /opt/nvim/data/nvim/site/parser | wc -l)" -ge 20 \
+ && test -d /opt/nvim/data/nvim/mason/packages/tree-sitter-cli
