@@ -63,9 +63,11 @@ network:
     - docker.com             # and the CDN it is served from
 
 # Memory is the ceiling on the host rather than a preference: a machine's
-# memory is a file on the host's /dev/shm, so this has to fit there — raising
-# it means raising /dev/shm first, and up refuses outright when it does not fit.
+# memory is a file on the host's /dev/shm, and this host mounts 7.6GiB of it.
+# That is what picks 7 — a machine larger than the mount starts, reports itself
+# running and then dies with no error. More than this means raising /dev/shm
+# first.
 vm:
   cpus: 4
-  memory: 8GiB
+  memory: 7GiB
   disk: 40GiB

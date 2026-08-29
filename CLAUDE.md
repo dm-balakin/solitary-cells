@@ -22,7 +22,7 @@ things that genuinely differ. Those are, and only these:
 - `cell.yaml` — `description`, the `user: cell` line, `devices:`, port 5173 for
   the docs site's dev server, three extra `network.allow` entries (`go.dev`,
   `dl.google.com`, `golang.org`), and `vm.disk` (80GiB against 40GiB) and
-  `vm.memory` (6GiB against 8GiB — the sibling is the bigger one, and neither
+  `vm.memory` (6GiB against 7GiB — the sibling is the bigger one, and neither
   fits alongside the other in /dev/shm)
 - `Containerfile` — the Go, qemu/lima and `useradd` blocks, and the extra
   version checks in the final `RUN`
