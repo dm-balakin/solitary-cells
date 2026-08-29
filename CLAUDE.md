@@ -19,9 +19,10 @@ its `Containerfile` sits in, so nothing can be shared between them.
 **A change to either is a change to make to both**, unless it is one of the
 things that genuinely differ. Those are, and only these:
 
-- `cell.yaml` — `description`, the `user: cell` line, `devices:`, three extra
-  `network.allow` entries (`go.dev`, `dl.google.com`, `golang.org`), and
-  `vm.memory`/`vm.disk` (6GiB/80GiB against 4GiB/40GiB)
+- `cell.yaml` — `description`, the `user: cell` line, `devices:`, port 5173 for
+  the docs site's dev server, three extra `network.allow` entries (`go.dev`,
+  `dl.google.com`, `golang.org`), and `vm.memory`/`vm.disk` (6GiB/80GiB against
+  4GiB/40GiB)
 - `Containerfile` — the Go, qemu/lima and `useradd` blocks, and the extra
   version checks in the final `RUN`
 - `README.md` — the cell it describes

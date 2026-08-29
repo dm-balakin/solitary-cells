@@ -22,10 +22,11 @@ secrets:
   GH_TOKEN:
     description: a token gh and git push authenticate with
 
-# Only this port reaches the host. Everything else the cell listens on stays
+# Only these ports reach the host. Everything else the cell listens on stays
 # inside it.
 ports:
   - 3000
+  - 5173  # vite, which is what solitary's docs site runs on under `pnpm dev`
 
 # The one device this cell is given. The host allows nested virtualisation and
 # the machine's kernel has the node, so a guest started in here is a third
