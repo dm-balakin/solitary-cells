@@ -4,7 +4,8 @@ Where `solitary` is developed. `web-agents` with three things added: the Go
 toolchain it is built with — Go, golangci-lint, goreleaser — `/dev/kvm`, passed
 in with `devices:`, and qemu and lima to use it with.
 
-Everything else is the same cell, and the two directories are copies rather
+Everything else is the same cell, bar the Playwright browser web-agents carries
+for work this one does not do, and the two directories are copies rather
 than one shared context: a cell's build context is the directory its
 Containerfile sits in, so a change made to one has to be made to the other by
 hand.
@@ -20,8 +21,9 @@ qemu and lima are in the image, pinned to the host's lima version, so a
 `solitary` built in a worktree here can create a machine here: host, cell,
 guest. That is also why this cell names a `user:` where its sibling does not —
 limactl refuses to run as root, and a cell is root in its container until the
-definition says otherwise, so work here happens as `cell`. The guest's memory and disk come out of this cell's, which is why it
-asks for 6GiB and 80GiB where its sibling asks for 7 and 40.
+definition says otherwise, so work here happens as `cell`. The guest's memory
+and disk come out of this cell's, which is why it asks for 80GiB of disk where
+its sibling asks for 40. The memory is the same 6GiB on both.
 
 That is also the one thing to watch on the host: a guest's memory is a file on
 `/dev/shm`, which holds 7.7GiB, so this cell and `web-agents` do not both fit

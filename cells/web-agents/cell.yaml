@@ -62,13 +62,22 @@ network:
     - ubuntu.com # apt
     - docker.io # the base image
     - docker.com # and the CDN it is served from
+    - cdn.playwright.dev # the chromium build playwright downloads
+    - storage.googleapis.com # which is where that download redirects
 
 # Memory is the ceiling on the host rather than a preference: a machine's
 # memory is a file on the host's /dev/shm, and this host mounts 7.6GiB of it.
-# That is what picks 7 — a machine larger than the mount starts, reports itself
-# running and then dies with no error. More than this means raising /dev/shm
-# first.
+# A machine larger than the mount starts, reports itself running and then dies
+# with no error, so more than the mount means raising /dev/shm first.
+#
+# 7 fit until the image gained a browser, and then it did not: the margin was
+# the ~200MiB between a 7GiB memory file and the mount, and Playwright's
+# download and unzip are the first thing in the build that makes the guest
+# touch nearly all of its RAM. The host cannot back the next page, and the
+# guest takes it as a machine check while clearing one — qemu prints a register
+# dump, stops, and Lima goes on reporting the machine as running. 6 leaves
+# enough room that the build finishes.
 vm:
   cpus: 4
-  memory: 7GiB
+  memory: 6GiB
   disk: 40GiB

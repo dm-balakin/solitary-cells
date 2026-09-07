@@ -7,8 +7,8 @@ is the toolchain in it; a web project's own package manager comes from its
 package.json.
 
 The sibling cell is `kvm-agents`, which is this one plus the Go toolchain and
-`/dev/kvm`. It is a copy of this directory rather than a layer on top of it, so
-a change here is a change to make there too.
+`/dev/kvm`, and without the browser below. It is a copy of this directory rather
+than a layer on top of it, so a change here is a change to make there too.
 
 ## Start
 
@@ -52,6 +52,18 @@ Inside the cell, `~/.pi/agent/themes`, `extensions` and `skills` are symlinks
 into `/opt/pi`, so a rebuild updates them. `settings.json` and `npm/` are seeded
 once and then yours — pi writes to both when you change a model or add a
 package, and those changes survive the container being recreated.
+
+## The browser
+
+Playwright and its Chromium are in the image, in `/opt/ms-playwright` rather
+than the home, so a fresh cell has a browser without downloading one. There is
+no display: it runs headless, and it reaches only what `network.allow` names,
+like everything else here.
+
+Both agents are told it is there. `/opt/cell-instructions.md` is one note about
+what this cell is, linked in at start as Claude Code's `~/.claude/CLAUDE.md` and
+pi's `~/.pi/agent/AGENTS.md`; replace either with a real file inside the cell
+and that file wins.
 
 ## The firewall and pi
 

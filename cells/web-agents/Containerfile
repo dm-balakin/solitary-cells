@@ -176,6 +176,25 @@ RUN mkdir -p /opt/nvim/config /opt/nvim/data \
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable --install-directory /usr/local/node/bin
 
+# Playwright and the browser it drives, so an agent can open what it is building
+# instead of guessing. The browsers live in the image rather than in the default
+# ~/.cache: the home is a mount from the machine, so a download made during the
+# build would be hidden at run time and every fresh cell would fetch its own.
+# Chromium alone — the other two engines are a rebuild away if anything needs
+# them. Pinned because the browser build a release downloads is part of it.
+#
+# --with-deps is the apt half: a headless Chromium still wants the X, nss and
+# font libraries, and Ubuntu's image has none of them.
+ENV PLAYWRIGHT_VERSION=1.63.0
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+
+RUN npm install -g "playwright@${PLAYWRIGHT_VERSION}" \
+ && npm cache clean --force \
+ && playwright install --with-deps chromium \
+ && rm -rf /var/lib/apt/lists/* \
+ # Readable by whoever the cell turns out to run as, like /opt/pi below.
+ && chmod -R a+rX /opt/ms-playwright
+
 # Statusline. The script and its settings both live outside /home/cell: that
 # path is a mount from the machine, so anything the build puts there is hidden
 # at run time. /etc/claude-code is Claude Code's managed settings location,
@@ -219,6 +238,11 @@ RUN cd /opt/pi/npm \
  && npm cache clean --force \
  && chmod -R a+rX /opt/pi
 
+# What both agents read as their global context: what this cell is, and that a
+# browser is in it. One file, linked into the two places they look for it by
+# cell-init — both of those are in the home, so neither can be written here.
+COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md
+
 # Applied at every container start, for the things that have to live in the
 # cell's home and so cannot be baked into the image.
 COPY --chmod=0755 cell-init.sh /usr/local/bin/cell-init
@@ -229,6 +253,8 @@ WORKDIR /home/cell
 
 RUN node --version && npm --version && gh --version && claude --version \
  && pi --version && tmux -V && workmux --version && nvim --version | head -n 1 \
+ && playwright --version \
+ && test -d /opt/ms-playwright \
  && test -d /opt/pi/npm/node_modules/pi-subagents \
  && test -d /opt/pi/npm/node_modules/pi-web-access \
  && test -d /opt/pi/npm/node_modules/pi-mcp-adapter \

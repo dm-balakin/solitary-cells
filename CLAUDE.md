@@ -13,20 +13,33 @@ setup; this file covers the traps.
 ## The two cells are copies
 
 `cells/kvm-agents` is `cells/web-agents` plus a Go toolchain, qemu, lima and
-`/dev/kvm`. It is a copy, not a layer: a cell's build context is the directory
-its `Containerfile` sits in, so nothing can be shared between them.
+`/dev/kvm`, and minus Playwright. It is a copy, not a layer: a cell's build
+context is the directory its `Containerfile` sits in, so nothing can be shared
+between them.
 
 **A change to either is a change to make to both**, unless it is one of the
 things that genuinely differ. Those are, and only these:
 
 - `cell.yaml` — `description`, the `user: cell` line, `devices:`, three extra
   `network.allow` entries (`go.dev`, `dl.google.com`, `golang.org`), and
-  `vm.disk` (80GiB against 40GiB) and `vm.memory` (6GiB against 7GiB — the
-  sibling is the bigger one, and neither fits alongside the other in /dev/shm).
-  Port 5173 is not one of them: both cells forward it.
+  `vm.disk` (80GiB against 40GiB). Neither the memory nor port 5173 is one of
+  these any more: both cells forward 5173 and both ask for 6GiB, since neither
+  fits alongside the other in /dev/shm and web-agents crashed at 7
 - `Containerfile` — the Go, qemu/lima and `useradd` blocks, and the extra
   version checks in the final `RUN`
 - `README.md` — the cell it describes
+
+And, the other way around, three things web-agents has and kvm-agents does not.
+The browser is for the work web-agents is for; the cell that builds a Go CLI has
+no use for it, and it is a slow half of an image to carry for nothing:
+
+- `Containerfile` — the Playwright block, the `COPY` of `cell-instructions.md`,
+  and their two checks in the final `RUN`
+- `cell.yaml` — the `cdn.playwright.dev` and `storage.googleapis.com`
+  entries in `network.allow`; the second is not optional, since the first
+  redirects the Chrome-for-Testing download there
+- `cell-instructions.md`, and the `cell-init.sh` block that links it in as both
+  agents' global context
 
 `diff -r cells/web-agents cells/kvm-agents` should show those and nothing else.
 Run it after touching either cell.

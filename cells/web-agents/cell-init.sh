@@ -87,3 +87,17 @@ done
 # you add one from inside the cell, and that should survive the container being
 # recreated.
 [ -e "$agent/npm" ] || cp -a /opt/pi/npm "$agent/npm"
+
+# --- the global context both agents read -------------------------------------
+#
+# Claude Code looks for ~/.claude/CLAUDE.md and pi for ~/.pi/agent/AGENTS.md;
+# both get the same note, out of the image, so a rebuild updates it. Only ever
+# over our own symlink — a real file here was written by hand inside the cell
+# and wins, the same way pi's directories work above.
+mkdir -p "$HOME/.claude"
+
+for context in "$HOME/.claude/CLAUDE.md" "$agent/AGENTS.md"; do
+	if [ ! -e "$context" ] || [ -L "$context" ]; then
+		ln -sfn /opt/cell-instructions.md "$context"
+	fi
+done
