@@ -65,7 +65,14 @@ RUN printf '%s\n' \
 
 # The prompt, wired up the same way and appended after Ubuntu's own PS1 so that
 # it wins.
-COPY prompt.sh /etc/profile.d/solitary-prompt.sh
+#
+# --chmod, here and on every COPY below: solitary stages a build context in a
+# temporary directory on the host and writes it there 0600, so whatever a file's
+# mode is in git, it arrives in the image readable by root and no one else. That
+# is invisible in a cell that runs as root and breaks everything in one that does
+# not, quietly — an unreadable /etc/profile.d file is skipped without a word, and
+# this one is the prompt.
+COPY --chmod=0644 prompt.sh /etc/profile.d/solitary-prompt.sh
 RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 
 # The agents. Claude Code tracks latest: it updates itself in place anyway, so
@@ -112,9 +119,10 @@ RUN mkdir -p /etc/tmux/plugins \
  # change because an image was rebuilt on a different day.
  && git clone --depth 1 --branch v2.3.0 https://github.com/catppuccin/tmux /etc/tmux/plugins/tmux
 
-COPY tmux.conf /etc/tmux.conf
-COPY system-stats.sh /etc/tmux/system-stats.sh
-RUN chmod 0755 /etc/tmux/system-stats.sh
+# tmux is the quietest of them: given a config file it cannot read, it starts
+# anyway with none of this applied and reports nothing.
+COPY --chmod=0644 tmux.conf /etc/tmux.conf
+COPY --chmod=0755 system-stats.sh /etc/tmux/system-stats.sh
 
 # workmux, pinned to the version on the host. Its sandboxing is not configured:
 # the cell is already the boundary, and a Lima VM inside a Lima VM is not a
@@ -154,7 +162,7 @@ ENV EDITOR=nvim VISUAL=nvim
 # opens an editor rather than an installer. The bootstrap fails the build if
 # any of it is missing, since a cell that has to fetch half an editor on first
 # open is the thing this avoids.
-COPY nvim-bootstrap.lua /opt/nvim/bootstrap.lua
+COPY --chmod=0644 nvim-bootstrap.lua /opt/nvim/bootstrap.lua
 
 RUN mkdir -p /opt/nvim/config /opt/nvim/data \
  && git clone --depth 1 https://github.com/dm-balakin/nvim-config /opt/nvim/config/nvim \
@@ -176,15 +184,14 @@ RUN corepack enable --install-directory /usr/local/node/bin
 # to agree with the host about what local means.
 ENV TZ=Europe/Belgrade
 
-COPY statusline.sh /usr/local/bin/claude-statusline
-RUN chmod 0755 /usr/local/bin/claude-statusline \
- && mkdir -p /etc/claude-code
+COPY --chmod=0755 statusline.sh /usr/local/bin/claude-statusline
+RUN mkdir -p /etc/claude-code
 
 # Managed settings carry the statusline and the workmux hooks that colour a
 # tmux window by what the agent is doing. ~/.claude/settings.json would be the
 # usual place for both; it is in the home directory, so it is not available to
 # the image, and 'workmux setup' cannot write it during a build either.
-COPY claude-settings.json /etc/claude-code/managed-settings.json
+COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
 
 # pi's configuration — settings, the focus-dark theme, the two extensions and
 # the skills, all as they are on the host. Claude Code has a managed-settings
@@ -202,14 +209,19 @@ COPY pi /opt/pi
 # declare @earendil-works/pi-* as peers and get them from the pi they run
 # inside, so they are deliberately absent from the lockfile. Without the flag
 # npm calls the lockfile out of sync and refuses.
+#
+# The tree is opened up afterwards rather than with --chmod on the COPY, which
+# would put the file mode on the directories too: a+rX reaches what npm just
+# wrote as well, and cell-init copies this whole directory into the home as the
+# cell's user.
 RUN cd /opt/pi/npm \
  && npm ci --legacy-peer-deps \
- && npm cache clean --force
+ && npm cache clean --force \
+ && chmod -R a+rX /opt/pi
 
 # Applied at every container start, for the things that have to live in the
 # cell's home and so cannot be baked into the image.
-COPY cell-init.sh /usr/local/bin/cell-init
-RUN chmod 0755 /usr/local/bin/cell-init
+COPY --chmod=0755 cell-init.sh /usr/local/bin/cell-init
 
 # The cell's home is a mount from the machine, so anything written here during
 # the build would be hidden at run time. Keep build-time state out of it.
