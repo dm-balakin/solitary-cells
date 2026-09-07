@@ -21,6 +21,7 @@ secrets:
 # inside it.
 ports:
   - 3000
+  - 5173
 
 # What this cell may reach. Everything else — the rest of the internet, the
 # host, the local network — is refused, and an unlisted name does not even
@@ -47,20 +48,20 @@ network:
     - 1.1.1.1
 
   allow:
-    - anthropic.com          # Claude Code: api, console, telemetry
-    - claude.ai              # signing in
-    - claude.com             # what Claude Code reaches for docs and account
-    - chatgpt.com            # pi's default provider: the Codex backend
-    - openai.com             # and the auth and api hosts behind it
-    - pi.dev                 # pi's version check and changelog
-    - mcp.context7.com       # the context7 MCP server, for both agents
-    - github.com             # gh, git clones, releases, the apt repo for gh
-    - githubusercontent.com  # raw scripts and release assets
-    - npmjs.org              # npm, and what mason installs from it
-    - nodejs.org             # the node nvm installs
-    - ubuntu.com             # apt
-    - docker.io              # the base image
-    - docker.com             # and the CDN it is served from
+    - anthropic.com # Claude Code: api, console, telemetry
+    - claude.ai # signing in
+    - claude.com # what Claude Code reaches for docs and account
+    - chatgpt.com # pi's default provider: the Codex backend
+    - openai.com # and the auth and api hosts behind it
+    - pi.dev # pi's version check and changelog
+    - mcp.context7.com # the context7 MCP server, for both agents
+    - github.com # gh, git clones, releases, the apt repo for gh
+    - githubusercontent.com # raw scripts and release assets
+    - npmjs.org # npm, and what mason installs from it
+    - nodejs.org # the node nvm installs
+    - ubuntu.com # apt
+    - docker.io # the base image
+    - docker.com # and the CDN it is served from
 
 # Memory is the ceiling on the host rather than a preference: a machine's
 # memory is a file on the host's /dev/shm, and this host mounts 7.6GiB of it.
