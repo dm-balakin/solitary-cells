@@ -23,8 +23,16 @@ local function log(msg)
 	io.stdout:flush()
 end
 
--- Mason. Its installs are already running by the time this executes.
+-- Mason. Its installs are already running by the time this executes, or will be
+-- once the registry is in: LazyVim asks for it asynchronously, and on a fresh
+-- build there is none yet, so until it lands every get_package below fails.
+-- refresh() without a callback blocks, and joins the update already in flight
+-- rather than starting a second one.
 local registry = require("mason-registry")
+if not registry.refresh() then
+	log("FAILED: could not download mason's registry")
+	vim.cmd("cq")
+end
 local tools = vim.list_extend(
 	-- treesitter's main branch compiles parsers with the tree-sitter CLI,
 	-- which mason installs but no config lists.
@@ -37,28 +45,39 @@ local tools = vim.list_extend(
 log("installing mason tools: " .. table.concat(tools, ", "))
 for _, name in ipairs(tools) do
 	local ok, pkg = pcall(registry.get_package, name)
-	if ok and not pkg:is_installed() then
+	if ok and not pkg:is_installed() and not pkg:is_installing() then
 		pcall(function()
 			pkg:install()
 		end)
 	end
 end
 
+-- Wait for the installs to finish rather than to succeed: one that failed is
+-- neither installed nor installing, and waiting on it would only spend the
+-- timeout before reporting it.
 vim.wait(timeout, function()
 	for _, name in ipairs(tools) do
 		local ok, pkg = pcall(registry.get_package, name)
-		if ok and not pkg:is_installed() then
+		if ok and pkg:is_installing() then
 			return false
 		end
 	end
 	return true
 end, 1000)
 
+-- A name the registry does not know is a failure too, not something to skip.
 for _, name in ipairs(tools) do
 	local ok, pkg = pcall(registry.get_package, name)
-	if ok and not pkg:is_installed() then
+	if not ok or not pkg:is_installed() then
 		failed[#failed + 1] = "mason/" .. name
 	end
+end
+
+-- The parsers below are compiled by the tree-sitter CLI, so without it they
+-- can only fail, and say less about why than this does.
+if vim.tbl_contains(failed, "mason/tree-sitter-cli") then
+	log("FAILED: " .. table.concat(failed, ", "))
+	vim.cmd("cq")
 end
 
 -- Treesitter parsers, compiled here rather than on first open.
