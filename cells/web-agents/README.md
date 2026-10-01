@@ -53,6 +53,21 @@ into `/opt/pi`, so a rebuild updates them. `settings.json` and `npm/` are seeded
 once and then yours — pi writes to both when you change a model or add a
 package, and those changes survive the container being recreated.
 
+## Updating
+
+Nothing in the cell updates itself. The container is started over from the image
+every time the machine boots, so an update an agent downloads into it is gone by
+the next boot — Claude Code's auto-updater is off, and pi's, gh's and npm's
+version notices with it. Update by rebuilding instead:
+
+```sh
+solitary up --rebuild web-agents
+```
+
+or `b` in `solitary dashboard`. That builds the `Containerfile` again without a
+cache, so Claude Code and gh come in at their latest and everything pinned stays
+where it is pinned. The home is kept; every session in the cell ends.
+
 ## The browser
 
 Playwright and its Chromium are in the image, in `/opt/ms-playwright` rather

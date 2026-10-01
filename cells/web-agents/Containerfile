@@ -30,6 +30,10 @@ RUN mkdir -p -m 755 /etc/apt/keyrings \
  && apt-get install -y --no-install-recommends gh \
  && rm -rf /var/lib/apt/lists/*
 
+# gh is not pinned, so it is as new as the last rebuild; telling every shell
+# about a newer one only names a version the cell gets by rebuilding.
+ENV GH_NO_UPDATE_NOTIFIER=1
+
 # Let git push over https authenticate the way gh does, using GH_TOKEN from the
 # environment. This belongs to the image rather than to something set up by hand
 # inside the cell, so it survives the cell being rebuilt from scratch. The
@@ -53,6 +57,9 @@ RUN mkdir -p "$NVM_DIR" \
  && ln -s "$NVM_DIR/versions/node/$(nvm version default)" /usr/local/node
 
 ENV PATH=/usr/local/node/bin:$PATH
+# npm's own notice, for the same reason as gh's: node is pinned here, and npm
+# comes with it.
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
 # Make nvm itself usable in interactive shells, not just the pinned default.
 # solitary opens a non-login shell, which reads /etc/bash.bashrc but not
@@ -75,11 +82,17 @@ RUN printf '%s\n' \
 COPY --chmod=0644 prompt.sh /etc/profile.d/solitary-prompt.sh
 RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 
-# The agents. Claude Code tracks latest: it updates itself in place anyway, so
-# pinning here buys nothing. pi is pinned to the host's version, like tmux and
-# nvim below — its extensions are written against this API and a newer pi could
-# refuse to load them.
+# The agents. Claude Code tracks latest, and neither of them updates itself: the
+# container is started over from this image every time the machine boots, so an
+# update downloaded into it lasts until the next boot and is downloaded again
+# after it. `solitary up --rebuild`, or b in the dashboard, builds this file
+# again without a cache, and that is what brings in a newer Claude Code.
+#
+# pi is pinned to the host's version, like tmux and nvim below — its extensions
+# are written against this API and a newer pi could refuse to load them — so all
+# its version check could do is offer one this cell should not take.
 ENV PI_VERSION=0.84.2
+ENV DISABLE_AUTOUPDATER=1 PI_SKIP_VERSION_CHECK=1
 
 RUN npm install -g @anthropic-ai/claude-code \
  && npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}" \
