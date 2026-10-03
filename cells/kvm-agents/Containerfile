@@ -191,12 +191,17 @@ RUN curl -fsSL -o /tmp/tree-sitter.gz \
 # opens an editor rather than an installer. The bootstrap fails the build if
 # any of it is missing, since a cell that has to fetch half an editor on first
 # open is the thing this avoids.
+#
+# One nvim for the sync and the bootstrap, not one each. LazyVim starts mason's
+# installs and treesitter's parsers as soon as it loads, so a sync that quit
+# with +qa killed them mid-flight — mason logged the aborted installs as an
+# error, and the bootstrap's nvim downloaded them all again. In one session the
+# bootstrap waits for those installs instead, and its own exit is the only one.
 COPY --chmod=0644 nvim-bootstrap.lua /opt/nvim/bootstrap.lua
 
 RUN mkdir -p /opt/nvim/config /opt/nvim/data \
  && git clone --depth 1 https://github.com/dm-balakin/nvim-config /opt/nvim/config/nvim \
- && timeout 600 nvim --headless "+Lazy! sync" +qa \
- && timeout 1200 nvim --headless -c "luafile /opt/nvim/bootstrap.lua"
+ && timeout 1800 nvim --headless "+Lazy! sync" -c "luafile /opt/nvim/bootstrap.lua"
 
 # Go. The work this cell is for is a Go CLI, so the toolchain and the two tools
 # its Makefile and its workflows name are in the image rather than fetched into

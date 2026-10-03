@@ -3,7 +3,9 @@
 --
 -- LazyVim does this work on startup and asynchronously: mason begins installing
 -- its tools, treesitter compiles parsers. A headless nvim that runs +qa exits
--- while both are in flight and kills them, which is why this waits instead.
+-- while both are in flight and kills them, which is why this waits instead. It
+-- runs in the same nvim as the plugin sync, after it, so those installs are
+-- already under way here and are joined rather than started over.
 
 local timeout = tonumber(vim.env.SOLITARY_NVIM_TIMEOUT or "900") * 1000
 local failed = {}
@@ -50,11 +52,12 @@ end
 
 -- Wait for the installs to finish rather than to succeed: one that failed is
 -- neither installed nor installing, and waiting on it would only spend the
--- timeout before reporting it.
+-- timeout before reporting it. Every package, not just the list above: this
+-- nvim's exit is the build's, and anything LazyVim started that is still
+-- running when it comes is aborted, with mason logging it as an error.
 vim.wait(timeout, function()
-	for _, name in ipairs(tools) do
-		local ok, pkg = pcall(registry.get_package, name)
-		if ok and pkg:is_installing() then
+	for _, pkg in ipairs(registry.get_all_packages()) do
+		if pkg:is_installing() then
 			return false
 		end
 	end
