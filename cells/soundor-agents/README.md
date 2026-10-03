@@ -4,7 +4,7 @@ A cell for [soundor](https://github.com/soundor/soundor): tmux and workmux
 running git worktrees, nvim, and two coding agents — Claude Code and pi — behind
 a Surfshark tunnel and a firewall that refuses everything not named in
 `cell.yaml`. It is `web-agents` plus what soundor's JUCE runtime builds a plugin
-with: cmake, ninja, g++, JUCE's Linux libraries and JUCE itself.
+with: cmake, ninja, Clang and lld, JUCE's Linux libraries and JUCE itself.
 
 It is a copy of `web-agents` rather than a layer on top of it, like `kvm-agents`
 is, so a change to one of the three is a change to make in the others too.
@@ -111,9 +111,17 @@ build**. What that rules out here:
 The agents are told the same in `/opt/cell-instructions.md`: they build with
 JUCE but do not package, publish or upload what it produces.
 
-cmake defaults to ninja here (`CMAKE_GENERATOR=Ninja`), since soundor never
-names a generator. A build directory keeps the generator it was configured
-with, so one made under Makefiles has to be deleted rather than reused.
+cmake defaults to ninja here (`CMAKE_GENERATOR=Ninja`), and to Clang and lld
+(`CC=clang`, `CXX=clang++`, `LDFLAGS=-fuse-ld=lld`), since soundor names
+neither a generator nor a compiler. `cc` and `c++` point at Clang too, so
+`soundor doctor` reports the compiler that is actually used. A build directory
+keeps the generator and compiler it was first configured with, so one made
+under Makefiles or gcc has to be deleted rather than reused.
+
+The LLVM tools are all version 18: `clang`, `lld`, `clangd`, `clang-format`
+and `clang-tidy`. gcc stays installed because Clang uses its C++ standard
+library and glibc headers, and it is there for anything that asks for `gcc` or
+`g++` by name.
 
 A plugin builds, but nothing in the cell can play it: there is no audio device
 and no display, so a Standalone has nothing to open. Build here; listen on the

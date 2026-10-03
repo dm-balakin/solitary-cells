@@ -1,6 +1,6 @@
 description: >-
   Claude Code and pi in tmux, with nvim, workmux, node and a JUCE
-  toolchain for soundor — cmake, ninja, the C++ compiler and JUCE in
+  toolchain for soundor — cmake, ninja, clang, lld and JUCE in
   /opt/JUCE — behind a Surfshark tunnel and a firewall that reaches the
   two agents, github and npm and nothing else.
 

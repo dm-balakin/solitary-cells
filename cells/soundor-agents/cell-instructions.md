@@ -13,9 +13,13 @@ a compiler:
 
 - JUCE is at `/opt/JUCE`, a path soundor finds on its own. Leave `jucePath` and
   `JUCE_DIR` unset unless a project really wants another copy.
-- `cmake`, `ninja`, `g++` (as `c++`), `clangd` and `clang-format` are on PATH.
-  `CMAKE_GENERATOR` is `Ninja`; a build directory configured with another
-  generator has to be deleted, not reconfigured.
+- `cmake`, `ninja`, Clang 18 (`clang`, `clang++`, and `cc`/`c++` point at
+  them), `lld`, `clangd`, `clang-format` and `clang-tidy` are on PATH.
+- Builds use Clang and lld by default: `CC=clang`, `CXX=clang++`,
+  `LDFLAGS=-fuse-ld=lld` and `CMAKE_GENERATOR=Ninja` are set. A build directory
+  keeps the compiler and generator it was first configured with, so one made
+  with anything else has to be deleted, not reconfigured. gcc is still
+  installed; use it only when a task asks for it.
 - JUCE's Linux libraries, webkit2gtk included, are installed, so a configure
   that fails on a missing package is worth reporting rather than working
   around.
