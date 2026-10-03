@@ -5,10 +5,10 @@ toolchain it is built with — Go, golangci-lint, goreleaser — `/dev/kvm`, pas
 in with `devices:`, and qemu and lima to use it with.
 
 Everything else is the same cell, bar the Playwright browser web-agents carries
-for work this one does not do, and the two directories are copies rather
-than one shared context: a cell's build context is the directory its
-Containerfile sits in, so a change made to one has to be made to the other by
-hand.
+for work this one does not do, and the directories — these two and
+`soundor-agents`, a third copy with JUCE in it — are copies rather than one
+shared context: a cell's build context is the directory its Containerfile sits
+in, so a change made to one has to be made to the others by hand.
 
 ## The device
 

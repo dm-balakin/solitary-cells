@@ -1,0 +1,334 @@
+FROM docker.io/library/ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Without this the image has no locale at all, and every terminal program falls
+# back to ASCII: tmux rewrites each wide character as an underscore, so workmux's
+# status glyphs and anything else non-ASCII arrive mangled. C.UTF-8 is built into
+# glibc, so it needs no locale package.
+ENV LANG=C.UTF-8
+
+# Base tools. ripgrep and fd are what Claude Code reaches for; the rest is what
+# any of this needs to fetch and verify anything else.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates curl git gnupg jq less ripgrep fd-find unzip tzdata \
+      build-essential python3 ncurses-term \
+ && rm -rf /var/lib/apt/lists/* \
+ # Debian and Ubuntu ship fd as fdfind; everything that looks for it, including
+ # LazyVim, expects the real name.
+ && ln -s /usr/bin/fdfind /usr/local/bin/fd
+
+# GitHub CLI, from its own apt repository rather than a distro snapshot.
+RUN mkdir -p -m 755 /etc/apt/keyrings \
+ && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends gh \
+ && rm -rf /var/lib/apt/lists/*
+
+# gh is not pinned, so it is as new as the last rebuild; telling every shell
+# about a newer one only names a version the cell gets by rebuilding.
+ENV GH_NO_UPDATE_NOTIFIER=1
+
+# Let git push over https authenticate the way gh does, using GH_TOKEN from the
+# environment. This belongs to the image rather than to something set up by hand
+# inside the cell, so it survives the cell being rebuilt from scratch. The
+# identity to commit under is not here: git reads that from GIT_AUTHOR_* and
+# GIT_COMMITTER_*, which cell.yaml declares.
+RUN git config --system credential."https://github.com".helper '!/usr/bin/gh auth git-credential' \
+ && git config --system credential."https://gist.github.com".helper '!/usr/bin/gh auth git-credential'
+
+# nvm, installed system-wide so both this build and later shells see it.
+ENV NVM_DIR=/usr/local/nvm
+ENV NVM_VERSION=v0.40.6
+ENV NODE_VERSION=24
+
+RUN mkdir -p "$NVM_DIR" \
+ && curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash \
+ && . "$NVM_DIR/nvm.sh" \
+ && nvm install "$NODE_VERSION" \
+ && nvm alias default "$NODE_VERSION" \
+ # A stable path to whichever v24.x nvm resolved, so PATH does not have to
+ # name the patch version.
+ && ln -s "$NVM_DIR/versions/node/$(nvm version default)" /usr/local/node
+
+ENV PATH=/usr/local/node/bin:$PATH
+# npm's own notice, for the same reason as gh's: node is pinned here, and npm
+# comes with it.
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+
+# Make nvm itself usable in interactive shells, not just the pinned default.
+# solitary opens a non-login shell, which reads /etc/bash.bashrc but not
+# /etc/profile.d, so wire up both.
+RUN printf '%s\n' \
+      'export NVM_DIR=/usr/local/nvm' \
+      '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' \
+      > /etc/profile.d/nvm.sh \
+ && echo '. /etc/profile.d/nvm.sh' >> /etc/bash.bashrc
+
+# The prompt, wired up the same way and appended after Ubuntu's own PS1 so that
+# it wins.
+#
+# --chmod, here and on every COPY below: solitary stages a build context in a
+# temporary directory on the host and writes it there 0600, so whatever a file's
+# mode is in git, it arrives in the image readable by root and no one else. That
+# is invisible in a cell that runs as root and breaks everything in one that does
+# not, quietly — an unreadable /etc/profile.d file is skipped without a word, and
+# this one is the prompt.
+COPY --chmod=0644 prompt.sh /etc/profile.d/solitary-prompt.sh
+RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
+
+# The agents. Claude Code tracks latest, and neither of them updates itself: the
+# container is started over from this image every time the machine boots, so an
+# update downloaded into it lasts until the next boot and is downloaded again
+# after it. `solitary up --rebuild`, or b in the dashboard, builds this file
+# again without a cache, and that is what brings in a newer Claude Code.
+#
+# pi is pinned to the host's version, like tmux and nvim below — its extensions
+# are written against this API and a newer pi could refuse to load them — so all
+# its version check could do is offer one this cell should not take.
+ENV PI_VERSION=0.84.2
+ENV DISABLE_AUTOUPDATER=1 PI_SKIP_VERSION_CHECK=1
+
+RUN npm install -g @anthropic-ai/claude-code \
+ && npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}" \
+ && npm cache clean --force
+
+# tmux, built from source to match the host's version. Ubuntu ships 3.4, which
+# does not know extended-keys-format; tmux stops reading a config file at the
+# first unknown option, so on 3.4 everything below that line — the theme, the
+# key bindings, the plugins — is silently skipped.
+ENV TMUX_VERSION=3.7b
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libevent-dev libncurses-dev bison pkg-config \
+ && curl -fsSL -o /tmp/tmux.tar.gz \
+      "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" \
+ && tar -C /tmp -xzf /tmp/tmux.tar.gz \
+ && cd /tmp/tmux-${TMUX_VERSION} \
+ && ./configure \
+ && make -j"$(nproc)" \
+ && make install \
+ && cd / \
+ && rm -rf /tmp/tmux.tar.gz /tmp/tmux-${TMUX_VERSION} \
+ && rm -rf /var/lib/apt/lists/*
+
+# tmux is configured system-wide. It reads /etc/tmux.conf before anything in a
+# home directory, which is what makes this work here: the cell's home is a
+# mount from the machine and hides whatever the image puts under it.
+#
+# The plugins are cloned during the build rather than installed by TPM on first
+# run, so a fresh cell has a working status bar without pressing anything.
+ENV TMUX_PLUGIN_MANAGER_PATH=/etc/tmux/plugins/
+
+RUN mkdir -p /etc/tmux/plugins \
+ && git clone --depth 1 https://github.com/tmux-plugins/tpm /etc/tmux/plugins/tpm \
+ && git clone --depth 1 https://github.com/tmux-plugins/tmux-sensible /etc/tmux/plugins/tmux-sensible \
+ # Pinned: the theme is the visible half of this config, and it should not
+ # change because an image was rebuilt on a different day.
+ && git clone --depth 1 --branch v2.3.0 https://github.com/catppuccin/tmux /etc/tmux/plugins/tmux
+
+# tmux is the quietest of them: given a config file it cannot read, it starts
+# anyway with none of this applied and reports nothing.
+COPY --chmod=0644 tmux.conf /etc/tmux.conf
+COPY --chmod=0755 system-stats.sh /etc/tmux/system-stats.sh
+
+# workmux, pinned to the version on the host. Its sandboxing is not configured:
+# the cell is already the boundary, and a Lima VM inside a Lima VM is not a
+# thing. It drives git worktrees and tmux windows here, nothing else.
+ENV WORKMUX_VERSION=v0.1.232
+
+RUN curl -fsSL https://raw.githubusercontent.com/raine/workmux/main/scripts/install.sh \
+      | WORKMUX_INSTALL_DIR=/usr/local/bin bash \
+ && workmux --version
+
+# Neovim, from the project's own tarball: Ubuntu's package is far too old for
+# LazyVim. The version matches the host's.
+ENV NVIM_VERSION=v0.12.4
+
+RUN curl -fsSL -o /tmp/nvim.tar.gz \
+      "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" \
+ && tar -C /opt -xzf /tmp/nvim.tar.gz \
+ && rm -f /tmp/nvim.tar.gz
+
+# nvim's config and plugins belong to the image, for the same reason as tmux's:
+# nothing under the home directory survives. A wrapper points the two XDG
+# directories that hold them at the image, and leaves state and cache alone so
+# that shada, undo history and the like still land in the home and outlive a new
+# container.
+RUN printf '%s\n' \
+      '#!/bin/sh' \
+      'export XDG_CONFIG_HOME=/opt/nvim/config' \
+      'export XDG_DATA_HOME=/opt/nvim/data' \
+      'exec /opt/nvim-linux-x86_64/bin/nvim "$@"' \
+      > /usr/local/bin/nvim \
+ && chmod 0755 /usr/local/bin/nvim
+
+ENV EDITOR=nvim VISUAL=nvim
+
+# The config and everything it needs to run: plugins, mason's tools, and the
+# treesitter parsers, all compiled here so that the first nvim in a fresh cell
+# opens an editor rather than an installer. The bootstrap fails the build if
+# any of it is missing, since a cell that has to fetch half an editor on first
+# open is the thing this avoids.
+COPY --chmod=0644 nvim-bootstrap.lua /opt/nvim/bootstrap.lua
+
+RUN mkdir -p /opt/nvim/config /opt/nvim/data \
+ && git clone --depth 1 https://github.com/dm-balakin/nvim-config /opt/nvim/config/nvim \
+ && timeout 600 nvim --headless "+Lazy! sync" +qa \
+ && timeout 1200 nvim --headless -c "luafile /opt/nvim/bootstrap.lua"
+
+# The C++ half of soundor. Its JUCE runtime configures with cmake and builds
+# with whichever of c++, clang++ and g++ it finds first — build-essential's g++,
+# here — and cmake has to be 3.22 or newer, which noble's is.
+#
+# CMAKE_GENERATOR because soundor never passes -G: without it every build is
+# Makefiles, and ninja is the one that keeps four cores busy. A build directory
+# remembers its generator, so one configured before this changed has to go.
+#
+# The libraries are JUCE's list for Linux, for what a soundor plugin pulls in:
+# audio devices, fonts, the X11 window and — through NEEDS_WEB_BROWSER, since
+# the UI is a web page — webkit2gtk. JUCE finds that one through pkg-config
+# and a missing one fails the configure, so it is checked for below. curl is
+# compiled out by soundor's setup.cmake, and in anyway for a project that does
+# not. clangd and clang-format are for the editor and the agents, not the build.
+ENV CMAKE_GENERATOR=Ninja
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      cmake ninja-build pkg-config clangd clang-format gdb \
+      libasound2-dev libjack-jackd2-dev ladspa-sdk libcurl4-openssl-dev \
+      libfreetype-dev libfontconfig1-dev \
+      libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+      libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev mesa-common-dev \
+      libwebkit2gtk-4.1-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# JUCE itself, at /opt/JUCE: the one Linux path soundor's runtime looks in that
+# is not under the project or the home, so it is found with no jucePath and no
+# JUCE_DIR. soundor never downloads JUCE — its license wants accepting — and
+# this clone is that acceptance, made once for the cell. The version matches
+# the host's /opt/JUCE.
+#
+# JUCE LICENCE — JUCE IS NOT FREE SOFTWARE TO DO ANYTHING WITH
+#
+# JUCE is dual-licensed: AGPLv3, or JUCE's own commercial licence (Starter,
+# Indie, Pro). Building this image means you use JUCE under one of them —
+# read https://juce.com/legal/juce-8-licence before you do.
+#
+# - This image carries JUCE's source. Do not push it to a registry or hand
+#   it to anyone: that is redistributing JUCE, under that licence's terms.
+# - A plugin built here and shipped is AGPLv3 with its source published, or
+#   it needs a commercial JUCE licence. The cell cannot tell which you hold.
+# - Sharing this Containerfile is fine; it holds a clone command, not JUCE.
+#   Whoever builds it accepts the licence for themselves.
+#
+# A shallow clone of the tag is the whole of what add_subdirectory needs. It is
+# owned by root and read by the cell's user, which git calls dubious and refuses
+# to so much as describe, hence the safe.directory.
+ENV JUCE_VERSION=8.0.14
+
+RUN git clone --depth 1 --branch "${JUCE_VERSION}" \
+      https://github.com/juce-framework/JUCE /opt/JUCE \
+ && git config --system --add safe.directory /opt/JUCE
+
+# A web project pins its package manager in package.json for corepack to read.
+# Enabling corepack means a worktree gets that version rather than whatever is
+# installed; the prompt it would show before downloading one has no one to
+# answer it in an agent's shell.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable --install-directory /usr/local/node/bin
+
+# Playwright and the browser it drives, so an agent can open what it is building
+# instead of guessing. The browsers live in the image rather than in the default
+# ~/.cache: the home is a mount from the machine, so a download made during the
+# build would be hidden at run time and every fresh cell would fetch its own.
+# Chromium alone — the other two engines are a rebuild away if anything needs
+# them. Pinned because the browser build a release downloads is part of it.
+#
+# --with-deps is the apt half: a headless Chromium still wants the X, nss and
+# font libraries, and Ubuntu's image has none of them.
+ENV PLAYWRIGHT_VERSION=1.63.0
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+
+RUN npm install -g "playwright@${PLAYWRIGHT_VERSION}" \
+ && npm cache clean --force \
+ && playwright install --with-deps chromium \
+ && rm -rf /var/lib/apt/lists/* \
+ # Readable by whoever the cell turns out to run as, like /opt/pi below.
+ && chmod -R a+rX /opt/ms-playwright
+
+# Statusline. The script and its settings both live outside /home/cell: that
+# path is a mount from the machine, so anything the build puts there is hidden
+# at run time. /etc/claude-code is Claude Code's managed settings location,
+# which it reads regardless of the home directory.
+# The statusline prints rate-limit reset times in local time, so the cell has
+# to agree with the host about what local means.
+ENV TZ=Europe/Belgrade
+
+COPY --chmod=0755 statusline.sh /usr/local/bin/claude-statusline
+RUN mkdir -p /etc/claude-code
+
+# Managed settings carry the statusline and the workmux hooks that colour a
+# tmux window by what the agent is doing. ~/.claude/settings.json would be the
+# usual place for both; it is in the home directory, so it is not available to
+# the image, and 'workmux setup' cannot write it during a build either.
+COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
+
+# pi's configuration — settings, the focus-dark theme, the two extensions and
+# the skills, all as they are on the host. Claude Code has a managed-settings
+# location outside the home; pi does not, and everything it reads lives under
+# ~/.pi/agent, which is a mount from the machine. So the image parks it here
+# and cell-init links it in at start.
+COPY pi /opt/pi
+
+# The packages settings.json asks for, installed at build rather than by pi on
+# first run: a fresh cell should open an agent, not an npm install. To the
+# lockfile, so a rebuild gets the tree the host has rather than whatever the
+# ranges resolve to today.
+#
+# --legacy-peer-deps because that is how pi installs them itself: the packages
+# declare @earendil-works/pi-* as peers and get them from the pi they run
+# inside, so they are deliberately absent from the lockfile. Without the flag
+# npm calls the lockfile out of sync and refuses.
+#
+# The tree is opened up afterwards rather than with --chmod on the COPY, which
+# would put the file mode on the directories too: a+rX reaches what npm just
+# wrote as well, and cell-init copies this whole directory into the home as the
+# cell's user.
+RUN cd /opt/pi/npm \
+ && npm ci --legacy-peer-deps \
+ && npm cache clean --force \
+ && chmod -R a+rX /opt/pi
+
+# What both agents read as their global context: what this cell is, and that a
+# browser is in it. One file, linked into the two places they look for it by
+# cell-init — both of those are in the home, so neither can be written here.
+COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md
+
+# Applied at every container start, for the things that have to live in the
+# cell's home and so cannot be baked into the image.
+COPY --chmod=0755 cell-init.sh /usr/local/bin/cell-init
+
+# The cell's home is a mount from the machine, so anything written here during
+# the build would be hidden at run time. Keep build-time state out of it.
+WORKDIR /home/cell
+
+RUN node --version && npm --version && gh --version && claude --version \
+ && pi --version && tmux -V && workmux --version && nvim --version | head -n 1 \
+ && playwright --version \
+ && cmake --version | head -n 1 && ninja --version && c++ --version | head -n 1 \
+ && pkg-config --exists webkit2gtk-4.1 gtk+-3.0 alsa freetype2 fontconfig \
+ && grep -q "project(JUCE VERSION ${JUCE_VERSION} " /opt/JUCE/CMakeLists.txt \
+ && test -d /opt/JUCE/modules \
+ && test -d /opt/ms-playwright \
+ && test -d /opt/pi/npm/node_modules/pi-subagents \
+ && test -d /opt/pi/npm/node_modules/pi-web-access \
+ && test -d /opt/pi/npm/node_modules/pi-mcp-adapter \
+ && test -d /opt/nvim/data/nvim/lazy/LazyVim \
+ && test "$(ls /opt/nvim/data/nvim/site/parser | wc -l)" -ge 20 \
+ && test -d /opt/nvim/data/nvim/mason/packages/tree-sitter-cli

@@ -6,9 +6,10 @@ firewall that refuses everything not named in `cell.yaml`. Node with corepack
 is the toolchain in it; a web project's own package manager comes from its
 package.json.
 
-The sibling cell is `kvm-agents`, which is this one plus the Go toolchain and
-`/dev/kvm`, and without the browser below. It is a copy of this directory rather
-than a layer on top of it, so a change here is a change to make there too.
+The sibling cells are `kvm-agents`, which is this one plus the Go toolchain and
+`/dev/kvm`, and without the browser below, and `soundor-agents`, which is this
+one plus cmake, ninja and JUCE. They are copies of this directory rather than
+layers on top of it, so a change here is a change to make there too.
 
 ## Start
 
