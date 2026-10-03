@@ -33,15 +33,11 @@ if not registry.refresh() then
 	log("FAILED: could not download mason's registry")
 	vim.cmd("cq")
 end
-local tools = vim.list_extend(
-	-- treesitter's main branch compiles parsers with the tree-sitter CLI,
-	-- which mason installs but no config lists.
-	{ "tree-sitter-cli" },
-	vim.deepcopy(opts_of("mason.nvim").ensure_installed or {})
-)
+-- The tree-sitter CLI is not among them: the image installs it before nvim
+-- first runs, so LazyVim finds it on PATH and never asks mason for it.
+local tools = vim.deepcopy(opts_of("mason.nvim").ensure_installed or {})
 
--- LazyVim starts its own list on startup, but nothing asks for the tree-sitter
--- CLI until a parser is compiled, so ask for whatever is still missing.
+-- LazyVim starts its own list on startup; ask for whatever is still missing.
 log("installing mason tools: " .. table.concat(tools, ", "))
 for _, name in ipairs(tools) do
 	local ok, pkg = pcall(registry.get_package, name)
@@ -75,7 +71,8 @@ end
 
 -- The parsers below are compiled by the tree-sitter CLI, so without it they
 -- can only fail, and say less about why than this does.
-if vim.tbl_contains(failed, "mason/tree-sitter-cli") then
+if vim.fn.executable("tree-sitter") ~= 1 then
+	failed[#failed + 1] = "tree-sitter CLI (not on PATH)"
 	log("FAILED: " .. table.concat(failed, ", "))
 	vim.cmd("cq")
 end

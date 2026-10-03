@@ -170,6 +170,22 @@ RUN printf '%s\n' \
 
 ENV EDITOR=nvim VISUAL=nvim
 
+# The tree-sitter CLI, which nvim-treesitter's main branch compiles parsers
+# with. It is here rather than left to mason because LazyVim asks for it the
+# moment its treesitter config runs, and during the plugin sync below that
+# happens while mason is installing it already: mason refuses the second
+# install, and the sync logs an error for a run that is fine. LazyVim asks
+# mason only when no tree-sitter is on PATH, so with this one there nothing
+# asks twice. The version matches the host's.
+ENV TREE_SITTER_VERSION=0.26.11
+
+RUN curl -fsSL -o /tmp/tree-sitter.gz \
+      "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/tree-sitter-linux-x64.gz" \
+ && gunzip /tmp/tree-sitter.gz \
+ && install -m 0755 /tmp/tree-sitter /usr/local/bin/tree-sitter \
+ && rm -f /tmp/tree-sitter \
+ && tree-sitter --version
+
 # The config and everything it needs to run: plugins, mason's tools, and the
 # treesitter parsers, all compiled here so that the first nvim in a fresh cell
 # opens an editor rather than an installer. The bootstrap fails the build if
@@ -273,4 +289,4 @@ RUN node --version && npm --version && gh --version && claude --version \
  && test -d /opt/pi/npm/node_modules/pi-mcp-adapter \
  && test -d /opt/nvim/data/nvim/lazy/LazyVim \
  && test "$(ls /opt/nvim/data/nvim/site/parser | wc -l)" -ge 20 \
- && test -d /opt/nvim/data/nvim/mason/packages/tree-sitter-cli
+ && tree-sitter --version
