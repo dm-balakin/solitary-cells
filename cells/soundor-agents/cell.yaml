@@ -71,6 +71,9 @@ network:
     - docker.com # and the CDN it is served from
     - cdn.playwright.dev # the chromium build playwright downloads
     - storage.googleapis.com # which is where that download redirects
+    - skia.googlesource.com # Skia source and mirrored deps
+    - chromium.googlesource.com # buildtools, ANGLE, Chromium-hosted deps
+    - chrome-infra-packages.appspot.com # CIPD tools/packages used by Skia
 
 # Memory is the ceiling on the host rather than a preference: a machine's
 # memory is a file on the host's /dev/shm, and this host mounts 7.6GiB of it.
