@@ -17,17 +17,18 @@ machine and is named in `.gitignore`; see [Secrets](#secrets) below.
 | Cell | What it is |
 | --- | --- |
 | [`web-agents`](cells/web-agents) | Claude Code, Codex and pi in tmux, with nvim, workmux and node |
-| [`kvm-agents`](cells/kvm-agents) | the same cell plus the Go toolchain, qemu, lima and `/dev/kvm` — where `solitary` itself is developed |
+| [`kvm-agents`](cells/kvm-agents) | `web-agents` plus the Go toolchain, qemu, lima and `/dev/kvm` — where `solitary` itself is developed |
+| [`soundor-agents`](cells/soundor-agents) | `web-agents` plus what [soundor](https://github.com/soundor/soundor) builds a plugin with — cmake, ninja, Clang, lld and JUCE — and the host's GPU to render with |
 
 Each has its own README with what it holds, how to sign the agents in and what
-it can reach. The second is a copy of the first rather than a layer on top of
-it: a cell's build context is the directory its `Containerfile` sits in, so
-there is no way to share one. A change to either is a change to make to both.
+it can reach. The other two are copies of the first rather than layers on top
+of it: a cell's build context is the directory its `Containerfile` sits in, so
+there is no way to share one. A change to one is a change to make to all three.
 
-Both are built on `ubuntu:24.04`, run behind a Surfshark tunnel, and resolve and
-reach only the domains their `cell.yaml` names — an unlisted host does not
-resolve at all. The versions that make a cell feel like this machine (nvim,
-tmux, workmux, lima) are pinned in the `Containerfile` to the host's.
+All three are built on `ubuntu:24.04`, run behind a Surfshark tunnel, and
+resolve and reach only the domains their `cell.yaml` names — an unlisted host
+does not resolve at all. The versions that make a cell feel like this machine
+(nvim, tmux, workmux, lima) are pinned in the `Containerfile` to the host's.
 
 ## Setting up a machine
 
