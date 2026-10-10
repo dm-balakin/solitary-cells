@@ -30,6 +30,14 @@ ports:
   - 3000
   - 5173
 
+# A GPU to render with, shared with the host rather than taken from it: the
+# machine gets a virtual one, and the host runs its OpenGL (virgl) and Vulkan
+# (Venus) on a real card. Rendering only — no CUDA, no NVENC. Which card is the
+# host's to say, not this file's: solitary picks the discrete one, and gpu: in
+# config.yaml overrides it. A host with none starts the cell anyway, rendering
+# on the CPU.
+gpu: true
+
 # What this cell may reach. Everything else — the rest of the internet, the
 # host, the local network — is refused, and an unlisted name does not even
 # resolve. A domain covers its subdomains, so this list is shorter than the set

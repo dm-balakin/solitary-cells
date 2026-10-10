@@ -314,6 +314,18 @@ RUN npm install -g "playwright@${PLAYWRIGHT_VERSION}" \
  # Readable by whoever the cell turns out to run as, like /opt/pi below.
  && chmod -R a+rX /opt/ms-playwright
 
+# Mesa's drivers for the GPU cell.yaml gives the machine. It is a virtio-gpu,
+# so the drivers are the guest half of virgl (OpenGL) and Venus (Vulkan), and
+# what they talk to is the host's card; nothing in here knows it is an NVIDIA
+# one. Without them the node arrives and everything renders on llvmpipe
+# anyway, which is the failure this would otherwise be. mesa-utils and
+# vulkan-tools are for asking which one an app got: eglinfo -B and vulkaninfo
+# --summary.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      mesa-vulkan-drivers libgl1-mesa-dri libegl-mesa0 mesa-utils vulkan-tools \
+ && rm -rf /var/lib/apt/lists/*
+
 # Statusline. The script and its settings both live outside /home/cell: that
 # path is a mount from the machine, so anything the build puts there is hidden
 # at run time. /etc/claude-code is Claude Code's managed settings location,
@@ -373,6 +385,7 @@ WORKDIR /home/cell
 RUN node --version && npm --version && gh --version && claude --version \
  && pi --version && tmux -V && workmux --version && nvim --version | head -n 1 \
  && playwright --version \
+ && command -v eglinfo vulkaninfo >/dev/null \
  && cmake --version | head -n 1 && ninja --version \
  && c++ --version | head -n 1 && c++ --version | grep -q clang \
  && cc --version | grep -q clang \

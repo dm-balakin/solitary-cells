@@ -143,6 +143,34 @@ what this cell is, linked in at start as Claude Code's `~/.claude/CLAUDE.md` and
 pi's `~/.pi/agent/AGENTS.md`; replace either with a real file inside the cell
 and that file wins.
 
+## The GPU
+
+The machine renders on the host's GPU without taking it from the host.
+`gpu: true` gives it a virtual GPU, and the host runs what the cell sends it —
+OpenGL through virgl, Vulkan through Venus — on a real card. Which card is the
+host's choice, not this cell's: solitary picks the discrete one (here, the RTX
+4050), and `gpu:` in `config.yaml` overrides it. `solitary doctor` says which.
+The container gets the machine's `/dev/dri/renderD128`, and Mesa's drivers in
+the image talk to it. Rendering is all of it: CUDA and NVENC do not cross a
+virtual GPU.
+
+To see which device something got:
+
+```sh
+eglinfo -B -p surfaceless | grep renderer   # virgl (NVIDIA GeForce RTX 4050 …)
+vulkaninfo --summary | grep deviceName      # Virtio-GPU Venus (NVIDIA …) first
+```
+
+Venus lists the host's Intel GPU and llvmpipe as well, so a Vulkan app that
+picks its own device can end up on either. `llvmpipe` from `eglinfo` means the
+drivers or the node are missing and everything is on the CPU.
+
+A host that cannot give a GPU — none, or a qemu without Venus — starts the
+cell anyway and says so, and everything renders on llvmpipe. So does a machine
+started with `limactl start` directly: the qemu arguments are passed by
+solitary at every start rather than kept anywhere. This needs a solitary with
+`gpu:` (0.15.0 or later).
+
 ## The firewall and pi
 
 `pi-web-access` is installed, but the cell only resolves and reaches the names
