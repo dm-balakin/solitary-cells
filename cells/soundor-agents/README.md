@@ -49,7 +49,7 @@ configuration:
 | In the cell | Where it comes from |
 | --- | --- |
 | nvim + plugins, mason tools, treesitter parsers | `dm-balakin/nvim-config`, built at image build |
-| tmux 3.7b, catppuccin, workmux | pinned to the host's versions |
+| tmux 3.7c, catppuccin, workmux | pinned to the host's versions |
 | pi settings, `focus-dark`, extensions, skills | `pi/`, copied from `~/.pi/agent` |
 | Claude Code statusline and workmux hooks | `statusline.sh`, `claude-settings.json` |
 

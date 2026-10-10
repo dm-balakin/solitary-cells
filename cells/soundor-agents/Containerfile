@@ -91,7 +91,7 @@ RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 # pi is pinned to the host's version, like tmux and nvim below — its extensions
 # are written against this API and a newer pi could refuse to load them — so all
 # its version check could do is offer one this cell should not take.
-ENV PI_VERSION=0.84.2
+ENV PI_VERSION=0.84.3
 ENV DISABLE_AUTOUPDATER=1 PI_SKIP_VERSION_CHECK=1
 
 RUN npm install -g @anthropic-ai/claude-code @openai/codex \
@@ -102,7 +102,7 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex \
 # does not know extended-keys-format; tmux stops reading a config file at the
 # first unknown option, so on 3.4 everything below that line — the theme, the
 # key bindings, the plugins — is silently skipped.
-ENV TMUX_VERSION=3.7b
+ENV TMUX_VERSION=3.7c
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libevent-dev libncurses-dev bison pkg-config \
@@ -148,7 +148,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/raine/workmux/main/scripts/inst
 
 # Neovim, from the project's own tarball: Ubuntu's package is far too old for
 # LazyVim. The version matches the host's.
-ENV NVIM_VERSION=v0.12.4
+ENV NVIM_VERSION=v0.12.5
 
 RUN curl -fsSL -o /tmp/nvim.tar.gz \
       "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" \
