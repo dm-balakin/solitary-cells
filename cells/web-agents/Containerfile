@@ -279,9 +279,9 @@ RUN cd /opt/pi/npm \
  && npm cache clean --force \
  && chmod -R a+rX /opt/pi
 
-# What both agents read as their global context: what this cell is, and that a
-# browser is in it. One file, linked into the two places they look for it by
-# cell-init — both of those are in the home, so neither can be written here.
+# What every agent reads as its global context: what this cell is, and that a
+# browser is in it. One file, linked into the three places they look for it by
+# cell-init — all of them are in the home, so none can be written here.
 COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md
 
 # Applied at every container start, for the things that have to live in the

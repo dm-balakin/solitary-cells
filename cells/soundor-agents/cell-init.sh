@@ -2,7 +2,7 @@
 # Runs at container start, before the cell settles into its long-running
 # command. Everything here is idempotent: it runs again on every start.
 #
-# This exists because both agents read their configuration from the cell's home
+# This exists because the agents read their configuration from the cell's home
 # — a directory on the machine, mounted over whatever the image put there, so
 # the build cannot write it. The image ships the intent under /opt and this
 # applies it at start instead.
@@ -88,15 +88,16 @@ done
 # recreated.
 [ -e "$agent/npm" ] || cp -a /opt/pi/npm "$agent/npm"
 
-# --- the global context both agents read -------------------------------------
+# --- the global context every agent reads ------------------------------------
 #
-# Claude Code looks for ~/.claude/CLAUDE.md and pi for ~/.pi/agent/AGENTS.md;
-# both get the same note, out of the image, so a rebuild updates it. Only ever
-# over our own symlink — a real file here was written by hand inside the cell
-# and wins, the same way pi's directories work above.
-mkdir -p "$HOME/.claude"
+# Claude Code looks for ~/.claude/CLAUDE.md, Codex for ~/.codex/AGENTS.md and pi
+# for ~/.pi/agent/AGENTS.md; all three get the same note, out of the image, so a
+# rebuild updates it. Only ever over our own symlink — a real file here was
+# written by hand inside the cell and wins, the same way pi's directories work
+# above.
+mkdir -p "$HOME/.claude" "$HOME/.codex"
 
-for context in "$HOME/.claude/CLAUDE.md" "$agent/AGENTS.md"; do
+for context in "$HOME/.claude/CLAUDE.md" "$HOME/.codex/AGENTS.md" "$agent/AGENTS.md"; do
 	if [ ! -e "$context" ] || [ -L "$context" ]; then
 		ln -sfn /opt/cell-instructions.md "$context"
 	fi
