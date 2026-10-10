@@ -16,7 +16,7 @@ machine and is named in `.gitignore`; see [Secrets](#secrets) below.
 
 | Cell | What it is |
 | --- | --- |
-| [`web-agents`](cells/web-agents) | Claude Code and pi in tmux, with nvim, workmux and node |
+| [`web-agents`](cells/web-agents) | Claude Code, Codex and pi in tmux, with nvim, workmux and node |
 | [`kvm-agents`](cells/kvm-agents) | the same cell plus the Go toolchain, qemu, lima and `/dev/kvm` — where `solitary` itself is developed |
 
 Each has its own README with what it holds, how to sign the agents in and what

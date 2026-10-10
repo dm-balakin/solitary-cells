@@ -1,7 +1,7 @@
 # soundor agents cell
 
 A cell for [soundor](https://github.com/soundor/soundor): tmux and workmux
-running git worktrees, nvim, and two coding agents — Claude Code and pi — behind
+running git worktrees, nvim, and three coding agents — Claude Code, Codex and pi — behind
 a Surfshark tunnel and a firewall that refuses everything not named in
 `cell.yaml`. It is `web-agents` plus what soundor's JUCE runtime builds a plugin
 with: cmake, ninja, Clang and lld, JUCE's Linux libraries and JUCE itself.
@@ -28,11 +28,12 @@ yours at `cells/soundor-agents/vpn.conf` before the first start.
 
 ## Signing in
 
-Neither agent ships credentials in the image. Both keep them in `/home/cell`,
+None of the agents ships credentials in the image. They keep them in `/home/cell`,
 which is on the machine's disk and outlives the container, so this is once per
 cell rather than once per start.
 
 - **Claude Code** — run `claude` and follow the login.
+- **Codex** — run `codex` and follow the login.
 - **pi** — run `pi`, then `/login`, and pick ChatGPT (Codex). There is no
   browser in the cell to catch the loopback callback, so pi's headless path
   applies: open the URL on the host and paste the final redirect URL back into

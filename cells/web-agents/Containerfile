@@ -82,7 +82,7 @@ RUN printf '%s\n' \
 COPY --chmod=0644 prompt.sh /etc/profile.d/solitary-prompt.sh
 RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 
-# The agents. Claude Code tracks latest, and neither of them updates itself: the
+# The agents. Claude Code and Codex track latest, and none of them updates itself: the
 # container is started over from this image every time the machine boots, so an
 # update downloaded into it lasts until the next boot and is downloaded again
 # after it. `solitary up --rebuild`, or b in the dashboard, builds this file
@@ -94,7 +94,7 @@ RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 ENV PI_VERSION=0.84.2
 ENV DISABLE_AUTOUPDATER=1 PI_SKIP_VERSION_CHECK=1
 
-RUN npm install -g @anthropic-ai/claude-code \
+RUN npm install -g @anthropic-ai/claude-code @openai/codex \
  && npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}" \
  && npm cache clean --force
 
@@ -293,6 +293,7 @@ COPY --chmod=0755 cell-init.sh /usr/local/bin/cell-init
 WORKDIR /home/cell
 
 RUN node --version && npm --version && gh --version && claude --version \
+ && codex --version \
  && pi --version && tmux -V && workmux --version && nvim --version | head -n 1 \
  && playwright --version \
  && test -d /opt/ms-playwright \

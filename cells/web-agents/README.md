@@ -1,7 +1,7 @@
 # web agents cell
 
 A cell you drive from a terminal: tmux and workmux running git worktrees, nvim,
-and two coding agents — Claude Code and pi — behind a Surfshark tunnel and a
+and three coding agents — Claude Code, Codex and pi — behind a Surfshark tunnel and a
 firewall that refuses everything not named in `cell.yaml`. Node with corepack
 is the toolchain in it; a web project's own package manager comes from its
 package.json.
@@ -23,11 +23,12 @@ yours at `cells/web-agents/vpn.conf` before the first start.
 
 ## Signing in
 
-Neither agent ships credentials in the image. Both keep them in `/home/cell`,
+None of the agents ships credentials in the image. They keep them in `/home/cell`,
 which is on the machine's disk and outlives the container, so this is once per
 cell rather than once per start.
 
 - **Claude Code** — run `claude` and follow the login.
+- **Codex** — run `codex` and follow the login.
 - **pi** — run `pi`, then `/login`, and pick ChatGPT (Codex). There is no
   browser in the cell to catch the loopback callback, so pi's headless path
   applies: open the URL on the host and paste the final redirect URL back into
