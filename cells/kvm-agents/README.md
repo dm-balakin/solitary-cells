@@ -19,15 +19,15 @@ start, which is what makes it openable from inside a rootless container.
 
 qemu and lima are in the image, pinned to the host's lima version, so a
 `solitary` built in a worktree here can create a machine here: host, cell,
-guest. That is also why this cell names a `user:` where its sibling does not —
+guest. That is also why this cell names a `user:` where its siblings do not —
 limactl refuses to run as root, and a cell is root in its container until the
 definition says otherwise, so work here happens as `cell`. The guest's memory
 and disk come out of this cell's, which is why it asks for 80GiB of disk where
-its sibling asks for 40. The memory is the same 6GiB on both.
+its siblings ask for 40. The memory is the same 6GiB on all three.
 
-That is also the one thing to watch on the host: a guest's memory is a file on
-`/dev/shm`, which holds 7.7GiB, so this cell and `web-agents` do not both fit
-at once. Bring one down before the other comes up.
+That is also the one thing to watch on the host: a machine's memory is a file
+on `/dev/shm`, which holds 7.6GiB, so no two of the three cells fit at once.
+Bring one down before another comes up.
 
 The nested machine reaches the network through this cell's firewall, so what a
 guest can fetch is what `network.allow` names — `ubuntu.com` is in it, which is
@@ -45,9 +45,9 @@ yours at `cells/kvm-agents/vpn.conf` before the first start.
 
 ## Signing in
 
-None of the agents ships credentials in the image. They keep them in `/home/cell`,
-which is on the machine's disk and outlives the container, so this is once per
-cell rather than once per start.
+None of the agents ships credentials in the image. They keep them in
+`/home/cell`, which is on the machine's disk and outlives the container, so this
+is once per cell rather than once per start.
 
 - **Claude Code** — run `claude` and follow the login.
 - **Codex** — run `codex` and follow the login.
@@ -84,19 +84,23 @@ package, and those changes survive the container being recreated.
 Nothing in the cell updates itself. The container is started over from the image
 every time the machine boots, so an update an agent downloads into it is gone by
 the next boot — Claude Code's auto-updater is off, and pi's, gh's and npm's
-version notices with it. Update by rebuilding instead:
+version notices with it. Codex can still mention a newer release; the rebuild
+is what brings it in. Update by rebuilding instead:
 
 ```sh
 solitary up --rebuild kvm-agents
 ```
 
 or `b` in `solitary dashboard`. That builds the `Containerfile` again without a
-cache, so Claude Code and gh come in at their latest and everything pinned stays
-where it is pinned. The home is kept; every session in the cell ends.
+cache, so Claude Code, Codex and gh come in at their latest and everything
+pinned stays where it is pinned. The home is kept; every session in the cell
+ends.
 
 ## The firewall and pi
 
 `pi-web-access` is installed, but the cell only resolves and reaches the names
 in `cell.yaml`. Fetching an arbitrary URL fails, and it fails as a DNS error
-rather than a timeout. Add the domain to `network.allow` and rebuild if you
-want it, remembering that everything in that list is reachable by both agents.
+rather than a timeout. Add the domain to `network.allow` if you want it,
+remembering that everything in that list is reachable by every agent here. The
+list is a machine setting, so it applies at the next boot rather than at a
+rebuild: `solitary down kvm-agents && solitary up kvm-agents`.

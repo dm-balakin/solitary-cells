@@ -44,6 +44,19 @@ user holds. So, without the user asking for it explicitly:
 If a task looks like it leads to any of these, stop and say that it touches
 JUCE's licence.
 
+## A GPU is available
+
+The cell renders on the host's GPU through a virtual one: OpenGL through virgl,
+Vulkan through Venus, at `/dev/dri/renderD128`, with Mesa's drivers installed.
+Rendering only — there is no CUDA and no video encoder.
+
+Check before relying on it: `eglinfo -B -p surfaceless | grep renderer` should
+name `virgl (…)`, and `vulkaninfo --summary` a `Virtio-GPU Venus (…)` device.
+If either says `llvmpipe` only, this host gave the cell no GPU and everything
+renders on the CPU; that is the host's setup, not something to fix from here.
+A Vulkan app that picks its own device can land on llvmpipe or the host's other
+GPU, since Venus lists them too.
+
 ## A browser is installed
 
 Playwright and its Chromium are in the image, so driving a real browser needs no

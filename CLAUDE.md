@@ -10,10 +10,11 @@ no build and no test suite here — the only way to find out whether a change
 works is to build the cell and start it. `README.md` covers the layout and the
 setup; this file covers the traps.
 
-## The two cells are copies
+## The cells are copies
 
-`cells/kvm-agents` is `cells/web-agents` plus a Go toolchain, qemu, lima and
-`/dev/kvm`, and minus Playwright. It is a copy, not a layer: a cell's build
+There are three, and `cells/web-agents` is the one the other two are copied
+from. `cells/kvm-agents` is `cells/web-agents` plus a Go toolchain, qemu, lima
+and `/dev/kvm`, and minus Playwright. It is a copy, not a layer: a cell's build
 context is the directory its `Containerfile` sits in, so nothing can be shared
 between them.
 
@@ -38,11 +39,27 @@ no use for it, and it is a slow half of an image to carry for nothing:
 - `cell.yaml` — the `cdn.playwright.dev` and `storage.googleapis.com`
   entries in `network.allow`; the second is not optional, since the first
   redirects the Chrome-for-Testing download there
-- `cell-instructions.md`, and the `cell-init.sh` block that links it in as both
-  agents' global context
+- `cell-instructions.md`, and the `cell-init.sh` block that links it in as
+  every agent's global context
 
 `diff -r cells/web-agents cells/kvm-agents` should show those and nothing else.
 Run it after touching either cell.
+
+`cells/soundor-agents` is `cells/web-agents` plus what soundor builds a plugin
+with and a GPU, and it keeps the browser. A change to web-agents is a change to
+make to it too, bar what genuinely differs:
+
+- `cell.yaml` — `description`, the JUCE licence comment, `gpu: true`, and the
+  three Skia entries in `network.allow` (`skia.googlesource.com`,
+  `chromium.googlesource.com`, `chrome-infra-packages.appspot.com`)
+- `Containerfile` — the cmake/LLVM/JUCE-libraries block, the Clang and lld
+  defaults, the JUCE clone, the Mesa block, the comment on the
+  `cell-instructions.md` `COPY`, and their checks in the final `RUN`
+- `cell-instructions.md` — the JUCE, licence and GPU sections
+- `README.md` — the cell it describes
+
+`diff -r cells/web-agents cells/soundor-agents` should show those and nothing
+else.
 
 ## Which file applies when
 
@@ -51,8 +68,8 @@ This decides what a change costs, and it is worth saying in the commit message:
 - `cell.yaml` container settings (`build`, `command`, `secrets`, `devices`,
   `user`) and anything the `Containerfile` copies in — `solitary up` applies it,
   rebuilding the image when the `Containerfile` moved.
-- `cell.yaml` machine settings (`vm`, `ports`, `network`) — only at the next
-  boot. `up` warns on a running machine; the cell has to go down first.
+- `cell.yaml` machine settings (`vm`, `ports`, `network`, `gpu`) — only at the
+  next boot. `up` warns on a running machine; the cell has to go down first.
 - `cell-init.sh` — every container start. Everything in it must stay
   idempotent, and it must not clobber what the agents write: `~/.claude.json`
   holds the login and the session history, so it is merged with `jq`, and pi's
@@ -64,17 +81,18 @@ A cell resolves and reaches only what `network.allow` names; anything else fails
 as a DNS error rather than a timeout. The image is built *inside* the machine
 and behind the same firewall, so a package source missing from that list fails
 the build, not the cell — when a `Containerfile` change fetches from a new host,
-add the domain in the same commit. And that list is reachable by both agents, so
+add the domain in the same commit. And that list is reachable by every agent, so
 adding to it widens what they can reach too. Keep the trailing comment on each
 entry saying who needs it.
 
 ## Versions
 
 The `Containerfile` pins everything with an `ENV *_VERSION` near what uses it.
-nvim, tmux, workmux and lima are pinned *to the host's* versions on purpose —
-the point of a cell is that it works the way this machine does — so bumping one
-means checking the host rather than picking the latest. Ubuntu, node, go,
-golangci-lint and goreleaser are pinned to what the work needs.
+nvim, tmux, workmux, pi, tree-sitter, lima and JUCE are pinned *to the host's*
+versions on purpose — the point of a cell is that it works the way this machine
+does — so bumping one means checking the host rather than picking the latest.
+Ubuntu, node, go, golangci-lint, goreleaser and Playwright are pinned to what
+the work needs.
 
 ## `pi/` is a snapshot
 

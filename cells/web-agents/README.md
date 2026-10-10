@@ -1,15 +1,15 @@
 # web agents cell
 
 A cell you drive from a terminal: tmux and workmux running git worktrees, nvim,
-and three coding agents — Claude Code, Codex and pi — behind a Surfshark tunnel and a
-firewall that refuses everything not named in `cell.yaml`. Node with corepack
-is the toolchain in it; a web project's own package manager comes from its
-package.json.
+and three coding agents — Claude Code, Codex and pi — behind a Surfshark tunnel
+and a firewall that refuses everything not named in `cell.yaml`. Node with
+corepack is the toolchain in it; a web project's own package manager comes from
+its package.json.
 
 The sibling cells are `kvm-agents`, which is this one plus the Go toolchain and
 `/dev/kvm`, and without the browser below, and `soundor-agents`, which is this
-one plus cmake, ninja and JUCE. They are copies of this directory rather than
-layers on top of it, so a change here is a change to make there too.
+one plus soundor's JUCE toolchain and a GPU. They are copies of this directory
+rather than layers on top of it, so a change here is a change to make there too.
 
 ## Start
 
@@ -23,9 +23,9 @@ yours at `cells/web-agents/vpn.conf` before the first start.
 
 ## Signing in
 
-None of the agents ships credentials in the image. They keep them in `/home/cell`,
-which is on the machine's disk and outlives the container, so this is once per
-cell rather than once per start.
+None of the agents ships credentials in the image. They keep them in
+`/home/cell`, which is on the machine's disk and outlives the container, so this
+is once per cell rather than once per start.
 
 - **Claude Code** — run `claude` and follow the login.
 - **Codex** — run `codex` and follow the login.
@@ -60,15 +60,17 @@ package, and those changes survive the container being recreated.
 Nothing in the cell updates itself. The container is started over from the image
 every time the machine boots, so an update an agent downloads into it is gone by
 the next boot — Claude Code's auto-updater is off, and pi's, gh's and npm's
-version notices with it. Update by rebuilding instead:
+version notices with it. Codex can still mention a newer release; the rebuild
+is what brings it in. Update by rebuilding instead:
 
 ```sh
 solitary up --rebuild web-agents
 ```
 
 or `b` in `solitary dashboard`. That builds the `Containerfile` again without a
-cache, so Claude Code and gh come in at their latest and everything pinned stays
-where it is pinned. The home is kept; every session in the cell ends.
+cache, so Claude Code, Codex and gh come in at their latest and everything
+pinned stays where it is pinned. The home is kept; every session in the cell
+ends.
 
 ## The browser
 
@@ -77,14 +79,17 @@ than the home, so a fresh cell has a browser without downloading one. There is
 no display: it runs headless, and it reaches only what `network.allow` names,
 like everything else here.
 
-Both agents are told it is there. `/opt/cell-instructions.md` is one note about
-what this cell is, linked in at start as Claude Code's `~/.claude/CLAUDE.md` and
-pi's `~/.pi/agent/AGENTS.md`; replace either with a real file inside the cell
+All three agents are told it is there. `/opt/cell-instructions.md` is one note
+about what this cell is, linked in at start as Claude Code's
+`~/.claude/CLAUDE.md`, Codex's `~/.codex/AGENTS.md` and pi's
+`~/.pi/agent/AGENTS.md`; replace any of them with a real file inside the cell
 and that file wins.
 
 ## The firewall and pi
 
 `pi-web-access` is installed, but the cell only resolves and reaches the names
 in `cell.yaml`. Fetching an arbitrary URL fails, and it fails as a DNS error
-rather than a timeout. Add the domain to `network.allow` and rebuild if you
-want it, remembering that everything in that list is reachable by both agents.
+rather than a timeout. Add the domain to `network.allow` if you want it,
+remembering that everything in that list is reachable by every agent here. The
+list is a machine setting, so it applies at the next boot rather than at a
+rebuild: `solitary down web-agents && solitary up web-agents`.

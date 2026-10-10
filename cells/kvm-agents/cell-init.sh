@@ -2,7 +2,7 @@
 # Runs at container start, before the cell settles into its long-running
 # command. Everything here is idempotent: it runs again on every start.
 #
-# This exists because both agents read their configuration from the cell's home
+# This exists because the agents read their configuration from the cell's home
 # — a directory on the machine, mounted over whatever the image put there, so
 # the build cannot write it. The image ships the intent under /opt and this
 # applies it at start instead.
