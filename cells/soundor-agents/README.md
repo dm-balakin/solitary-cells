@@ -78,6 +78,15 @@ cache, so Claude Code, Codex and gh come in at their latest and everything
 pinned stays where it is pinned. The home is kept; every session in the cell
 ends.
 
+## Rust
+
+Rust 1.90.0 (`RUST_VERSION` in the `Containerfile`) is installed with rustup
+under `/opt/rustup`, with clippy and rustfmt. `network.allow` names `crates.io`
+and `rust-lang.org`, so cargo reaches the registry and rustup the toolchain
+downloads. Nothing on the host pins this version, so bump it when the work needs
+a newer one. `CARGO_HOME` stays in the home (`~/.cargo`), so the registry cache
+and anything from `cargo install` outlive a new container.
+
 ## JUCE
 
 JUCE 8.0.14 — the host's version — is cloned into `/opt/JUCE` at build. That is

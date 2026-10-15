@@ -77,6 +77,8 @@ network:
     - ubuntu.com # apt
     - docker.io # the base image
     - docker.com # and the CDN it is served from
+    - crates.io # cargo: the index, the crate downloads and the API
+    - rust-lang.org # rustup and the toolchain it installs
     - cdn.playwright.dev # the chromium build playwright downloads
     - storage.googleapis.com # which is where that download redirects
     - skia.googlesource.com # Skia source and mirrored deps
