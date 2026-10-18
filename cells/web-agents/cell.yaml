@@ -54,6 +54,7 @@ network:
     - chatgpt.com # Codex, and pi's default provider: the Codex backend
     - openai.com # and the auth and api hosts behind both
     - pi.dev # pi's version check and changelog
+    - opencode.ai # opencode: install script, api and docs
     - mcp.context7.com # the context7 MCP server, for Claude Code and pi
     - github.com # gh, git clones, releases, the apt repo for gh
     - githubusercontent.com # raw scripts and release assets
