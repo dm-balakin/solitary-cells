@@ -279,7 +279,7 @@ RUN npm install -g playwright \
 #
 # lima matches the host's version, like tmux and nvim: what is developed here
 # is the thing that drives it.
-ENV LIMA_VERSION=2.1.4
+ENV LIMA_VERSION=2.2.1
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
