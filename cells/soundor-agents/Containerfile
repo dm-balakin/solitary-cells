@@ -98,11 +98,15 @@ ENV DISABLE_AUTOUPDATER=1 OPENCODE_DISABLE_AUTOUPDATE=1
 RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai \
  && npm cache clean --force
 
-# tmux, built from source to match the host's version. Ubuntu ships 3.4, which
-# does not know extended-keys-format; tmux stops reading a config file at the
-# first unknown option, so on 3.4 everything below that line — the theme, the
-# key bindings, the plugins — is silently skipped.
-ENV TMUX_VERSION=3.7c
+# tmux, built from source. Ubuntu ships 3.4, which does not know
+# extended-keys-format; tmux stops reading a config file at the first unknown
+# option, so on 3.4 everything below that line — the theme, the key bindings,
+# the plugins — is silently skipped.
+#
+# The one pin here that is ahead of the host rather than matched to it: tmux's
+# latest release, which the host's packages have not caught up with. tmux.conf
+# and the theme behave the same on it as on the host's 3.7c.
+ENV TMUX_VERSION=3.8
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libevent-dev libncurses-dev bison pkg-config \

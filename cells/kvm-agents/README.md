@@ -64,7 +64,8 @@ configuration:
 | In the cell | Where it comes from |
 | --- | --- |
 | nvim + plugins, mason tools, treesitter parsers | `dm-balakin/nvim-config`, built at image build |
-| tmux 3.7c, catppuccin | pinned to the host's versions |
+| tmux 3.8 | pinned, a release ahead of the host's 3.7c |
+| catppuccin | pinned to the host's version |
 | go, golangci-lint, goreleaser | pinned in the `Containerfile` |
 | /dev/kvm | the machine's own node, passed in by `devices:` |
 | Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |

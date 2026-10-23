@@ -28,7 +28,8 @@ there is no way to share one. A change to one is a change to make to all three.
 All three are built on `ubuntu:24.04`, run behind a Surfshark tunnel, and
 resolve and reach only the domains their `cell.yaml` names — an unlisted host
 does not resolve at all. The versions that make a cell feel like this machine
-(nvim, tmux, lima) are pinned in the `Containerfile` to the host's.
+(nvim, lima) are pinned in the `Containerfile` to the host's; tmux is pinned to
+its latest release.
 
 ## Setting up a machine
 
