@@ -201,12 +201,17 @@ RUN mkdir -p /opt/nvim/config /opt/nvim/data \
 # its Makefile and its workflows name are in the image rather than fetched into
 # a worktree: golangci-lint, which is both the linter and — through
 # `golangci-lint fmt` — the formatter, and goreleaser, which the release
-# configuration is checked with. The version matches the host's; go.mod asks
-# for less than this, and a module that asks for more downloads its own
-# toolchain through the proxy.
-ENV GO_VERSION=1.26.6
-ENV GOLANGCI_LINT_VERSION=2.13.2
-ENV GORELEASER_VERSION=2.18.0
+# configuration is checked with.
+#
+# Each is pinned to what solitary's own CI runs, so a lint or a build that
+# passes here passes there: Go to the version go.mod asks for (a module that
+# asks for more downloads its own toolchain through the proxy), golangci-lint to
+# the version verify.yml names — the formatter is the same binary, so `fmt`
+# agrees too — and goreleaser to the v2 release the release workflow picks up.
+# When one of those moves, this moves with it.
+ENV GO_VERSION=1.26.10
+ENV GOLANGCI_LINT_VERSION=2.15.0
+ENV GORELEASER_VERSION=2.19.0
 
 RUN curl -fsSL -o /tmp/go.tar.gz \
       "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \

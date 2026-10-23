@@ -77,11 +77,12 @@ entry saying who needs it.
 The `Containerfile` pins everything with an `ENV *_VERSION` near what uses it.
 nvim, tmux, tree-sitter, lima and JUCE are pinned *to the host's* versions on
 purpose — the point of a cell is that it works the way this machine does — so
-bumping one means checking the host rather than picking the latest. Ubuntu,
-node, go, golangci-lint and goreleaser are pinned to what the work needs. Not
-pinned at all are the agents (Claude Code, Codex and opencode), Playwright and
-Rust's stable toolchain: each build takes their latest, and none of them updates
-itself.
+bumping one means checking the host rather than picking the latest. Ubuntu and
+node are pinned to what the work needs, and go, golangci-lint and goreleaser to
+what solitary's own CI runs — `go.mod`, `verify.yml` and the release workflow.
+Not pinned at all are the agents (Claude Code, Codex and opencode), Playwright
+and Rust's stable toolchain: each build takes their latest, and none of them
+updates itself.
 
 ## Never commit
 
