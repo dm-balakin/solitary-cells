@@ -1,8 +1,9 @@
 #!/bin/sh
-# Mark the tmux window Claude Code runs in with what it is doing: 🤖 while it
-# works, 💬 when it waits for you, ✅ when it is done. Called by the hooks in
-# claude-settings.json; /etc/tmux.conf shows the mark in the window's tab and
-# clears 💬 and ✅ once you look at the window.
+# Mark the tmux window an agent runs in with what it is doing: 🤖 while it
+# works, 💬 when it waits for you, ✅ when it is done. Called by Claude Code's
+# hooks in claude-settings.json, Codex's in codex-config.toml and opencode's
+# plugin; /etc/tmux.conf shows the mark in the window's tab and clears 💬 and ✅
+# once you look at the window.
 #
 # Outside tmux there is no window to mark, and a hook must never fail a turn,
 # so it says nothing and exits cleanly.

@@ -100,11 +100,16 @@ RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 # dashboard, builds this file again without a cache, and that is what brings in
 # newer ones.
 #
-# opencode is as it comes, with no config of its own: no LSP, no MCP servers,
-# no plugins. It still reads the cell note, from ~/.claude/CLAUDE.md, which it
-# falls back to when it has no AGENTS.md. Its npm package carries the binary
-# for each platform as a dependency, so npm is all it is fetched from.
-ENV DISABLE_AUTOUPDATER=1 OPENCODE_DISABLE_AUTOUPDATE=1
+# opencode is as it comes but for one plugin, the window marks below: no LSP, no
+# MCP servers, nothing else. It reads the cell note from ~/.claude/CLAUDE.md,
+# which it falls back to when it has no AGENTS.md. Its npm package carries the
+# binary for each platform as a dependency, so npm is all it is fetched from.
+#
+# OPENCODE_CONFIG_DIR is read alongside ~/.config/opencode rather than instead
+# of it, which is what lets the image ship that plugin into a home it cannot
+# write.
+ENV DISABLE_AUTOUPDATER=1 OPENCODE_DISABLE_AUTOUPDATE=1 \
+    OPENCODE_CONFIG_DIR=/etc/opencode
 
 RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai \
  && npm cache clean --force
@@ -152,9 +157,12 @@ RUN git clone --depth 1 --branch v2.3.2 https://github.com/catppuccin/tmux /etc/
 # anyway with none of this applied and reports nothing.
 COPY --chmod=0644 tmux.conf /etc/tmux.conf
 COPY --chmod=0755 system-stats.sh /etc/tmux/system-stats.sh
-# Marks the tmux window an agent runs in. Claude Code's hooks in the managed
-# settings call it, and tmux.conf shows the mark.
+# Marks the tmux window an agent runs in, and tmux.conf shows the mark. All
+# three agents call it: Claude Code from the hooks in its managed settings,
+# below; Codex from the hooks in its system config; opencode from a plugin.
 COPY --chmod=0755 agent-status /usr/local/bin/agent-status
+COPY --chmod=0644 codex-config.toml /etc/codex/config.toml
+COPY --chmod=0644 opencode/plugins/agent-status.js /etc/opencode/plugins/agent-status.js
 
 # Neovim, from the project's own tarball: Ubuntu's package is far too old for
 # LazyVim. The version matches the host's.

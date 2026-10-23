@@ -69,6 +69,7 @@ configuration:
 | go, golangci-lint, goreleaser | pinned in the `Containerfile` |
 | /dev/kvm | the machine's own node, passed in by `devices:` |
 | Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
+| Codex's and opencode's window marks | `codex-config.toml`, `opencode/plugins/agent-status.js` |
 
 ## Updating
 

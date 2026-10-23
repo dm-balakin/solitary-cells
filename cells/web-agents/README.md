@@ -2,9 +2,9 @@
 
 A cell you drive from a terminal: tmux, nvim, and three coding agents — Claude
 Code, Codex and opencode — behind a Surfshark tunnel and a firewall that refuses
-everything not named in `cell.yaml`. Each tmux window's tab shows what Claude
-Code in it is doing: 🤖 working, 💬 waiting for you, ✅ done. Node with corepack
-is the toolchain in it; a web project's own package manager comes from its
+everything not named in `cell.yaml`. Each tmux window's tab shows what the agent
+in it is doing: 🤖 working, 💬 waiting for you, ✅ done. Node with corepack is the
+toolchain in it; a web project's own package manager comes from its
 package.json.
 
 The sibling cells are `kvm-agents`, which is this one plus the Go toolchain and
@@ -47,6 +47,7 @@ configuration:
 | tmux 3.8 | pinned, a release ahead of the host's 3.7c |
 | catppuccin v2.3.2 | pinned, a release ahead of the host's v2.3.0 |
 | Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
+| Codex's and opencode's window marks | `codex-config.toml`, `opencode/plugins/agent-status.js` |
 
 ## Updating
 

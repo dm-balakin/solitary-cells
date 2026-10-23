@@ -60,7 +60,9 @@ cells/<name>/
   README.md                 what this cell is
   prompt.sh tmux.conf system-stats.sh statusline.sh claude-settings.json
   nvim-bootstrap.lua        the shell, tmux and editor the cell comes up in
-  agent-status              marks a tmux window with what Claude Code is doing
+  agent-status              marks a tmux window with what its agent is doing
+  codex-config.toml         Codex's system config: the hooks that call it
+  opencode/                 opencode's plugin that calls it
 ```
 
 ## Secrets

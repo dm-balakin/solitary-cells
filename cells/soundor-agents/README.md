@@ -51,6 +51,7 @@ configuration:
 | tmux 3.8 | pinned, a release ahead of the host's 3.7c |
 | catppuccin v2.3.2 | pinned, a release ahead of the host's v2.3.0 |
 | Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
+| Codex's and opencode's window marks | `codex-config.toml`, `opencode/plugins/agent-status.js` |
 
 ## Updating
 

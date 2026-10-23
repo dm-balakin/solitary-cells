@@ -1,0 +1,28 @@
+# Installed as /etc/codex/config.toml, the system layer of Codex's config. The
+# cell's own ~/.codex/config.toml is read over it, so anything set in there
+# still wins.
+#
+# The hooks mark the tmux window Codex runs in, the same way Claude Code's do:
+# 🤖 while it works, 💬 when it waits for an approval, ✅ when the turn is done.
+# They live here rather than in ~/.codex for two reasons: the home is a mount
+# from the machine, so the image cannot write it, and Codex runs a hook from the
+# home only after it has been reviewed and trusted with /hooks, where one from
+# here runs as it is.
+
+[[hooks.UserPromptSubmit]]
+hooks = [{ type = "command", command = "agent-status working || true" }]
+
+[[hooks.PostToolUse]]
+hooks = [{ type = "command", command = "agent-status working || true" }]
+
+# Printing nothing leaves the decision to the normal approval prompt.
+[[hooks.PermissionRequest]]
+hooks = [{ type = "command", command = "agent-status waiting || true" }]
+
+# Stop is the one event that wants JSON on stdout; an empty object lets the
+# turn end as it would have.
+[[hooks.Stop]]
+hooks = [{ type = "command", command = "agent-status done || true; echo '{}'" }]
+
+[[hooks.SessionEnd]]
+hooks = [{ type = "command", command = "agent-status clear || true" }]
