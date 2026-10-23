@@ -8,9 +8,9 @@ is the toolchain in it; a web project's own package manager comes from its
 package.json.
 
 The sibling cells are `kvm-agents`, which is this one plus the Go toolchain and
-`/dev/kvm`, and without the browser below, and `soundor-agents`, which is this
-one plus soundor's JUCE toolchain and a GPU. They are copies of this directory
-rather than layers on top of it, so a change here is a change to make there too.
+`/dev/kvm`, and `soundor-agents`, which is this one plus soundor's JUCE
+toolchain and a GPU. They are copies of this directory rather than layers on top
+of it, so a change here is a change to make there too.
 
 ## Start
 

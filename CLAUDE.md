@@ -14,9 +14,8 @@ setup; this file covers the traps.
 
 There are three, and `cells/web-agents` is the one the other two are copied
 from. `cells/kvm-agents` is `cells/web-agents` plus a Go toolchain, qemu, lima
-and `/dev/kvm`, and minus Playwright. It is a copy, not a layer: a cell's build
-context is the directory its `Containerfile` sits in, so nothing can be shared
-between them.
+and `/dev/kvm`. It is a copy, not a layer: a cell's build context is the
+directory its `Containerfile` sits in, so nothing can be shared between them.
 
 **A change to either is a change to make to both**, unless it is one of the
 things that genuinely differ. Those are, and only these:
@@ -30,24 +29,12 @@ things that genuinely differ. Those are, and only these:
   version checks in the final `RUN`
 - `README.md` — the cell it describes
 
-And, the other way around, three things web-agents has and kvm-agents does not.
-The browser is for the work web-agents is for; the cell that builds a Go CLI has
-no use for it, and it is a slow half of an image to carry for nothing:
-
-- `Containerfile` — the Playwright block, the `COPY` of `cell-instructions.md`,
-  and their two checks in the final `RUN`
-- `cell.yaml` — the `cdn.playwright.dev` and `storage.googleapis.com`
-  entries in `network.allow`; the second is not optional, since the first
-  redirects the Chrome-for-Testing download there
-- `cell-instructions.md`, and the `cell-init.sh` block that links it in as
-  every agent's global context
-
 `diff -r cells/web-agents cells/kvm-agents` should show those and nothing else.
 Run it after touching either cell.
 
 `cells/soundor-agents` is `cells/web-agents` plus what soundor builds a plugin
-with and a GPU, and it keeps the browser. A change to web-agents is a change to
-make to it too, bar what genuinely differs:
+with and a GPU. A change to web-agents is a change to make to it too, bar what
+genuinely differs:
 
 - `cell.yaml` — `description`, the JUCE licence comment, `gpu: true`, and the
   three Skia entries in `network.allow` (`skia.googlesource.com`,
@@ -88,13 +75,13 @@ entry saying who needs it.
 ## Versions
 
 The `Containerfile` pins everything with an `ENV *_VERSION` near what uses it.
-nvim, tmux, tree-sitter, lima and JUCE are pinned *to the host's*
-versions on purpose — the point of a cell is that it works the way this machine
-does — so bumping one means checking the host rather than picking the latest.
-Ubuntu, node, go, golangci-lint, goreleaser and Playwright are pinned to what
-the work needs. The agents — Claude Code, Codex and opencode — and Rust's
-stable toolchain are not pinned at all: each build takes their latest, and
-none of them updates itself.
+nvim, tmux, tree-sitter, lima and JUCE are pinned *to the host's* versions on
+purpose — the point of a cell is that it works the way this machine does — so
+bumping one means checking the host rather than picking the latest. Ubuntu,
+node, go, golangci-lint and goreleaser are pinned to what the work needs. Not
+pinned at all are the agents (Claude Code, Codex and opencode), Playwright and
+Rust's stable toolchain: each build takes their latest, and none of them updates
+itself.
 
 ## Never commit
 

@@ -209,11 +209,11 @@ RUN corepack enable --install-directory /usr/local/node/bin
 # ~/.cache: the home is a mount from the machine, so a download made during the
 # build would be hidden at run time and every fresh cell would fetch its own.
 # Chromium alone — the other two engines are a rebuild away if anything needs
-# them. Pinned because the browser build a release downloads is part of it.
+# them. Not pinned, like the agents: each build takes Playwright's latest
+# release and the Chromium build that release names.
 #
 # --with-deps is the apt half: a headless Chromium still wants the X, nss and
 # font libraries, and Ubuntu's image has none of them.
-ENV PLAYWRIGHT_VERSION=1.63.0
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 #
 # One mirror rather than Playwright's three. The first two lead to
@@ -223,7 +223,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 # `playwright install` would walk the same list.
 ENV PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.playwright.dev
 
-RUN npm install -g "playwright@${PLAYWRIGHT_VERSION}" \
+RUN npm install -g playwright \
  && npm cache clean --force \
  && playwright install --with-deps chromium \
  && rm -rf /var/lib/apt/lists/* \

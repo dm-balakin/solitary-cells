@@ -4,10 +4,9 @@ Where `solitary` is developed. `web-agents` with three things added: the Go
 toolchain it is built with — Go, golangci-lint, goreleaser — `/dev/kvm`, passed
 in with `devices:`, and qemu and lima to use it with.
 
-Everything else is the same cell, bar the Playwright browser web-agents carries
-for work this one does not do, and the directories — these two and
-`soundor-agents`, a third copy with JUCE in it — are copies rather than one
-shared context: a cell's build context is the directory its Containerfile sits
+Everything else is the same cell, browser included, and the directories —
+these two and `soundor-agents`, a third copy with JUCE in it — are copies
+rather than one shared context: a cell's build context is the directory its Containerfile sits
 in, so a change made to one has to be made to the others by hand.
 
 ## The device
@@ -86,6 +85,19 @@ or `b` in `solitary dashboard`. That builds the `Containerfile` again without a
 cache, so Claude Code, Codex, opencode and gh come in at their latest and everything
 pinned stays where it is pinned. The home is kept; every session in the cell
 ends.
+
+## The browser
+
+Playwright and its Chromium are in the image, in `/opt/ms-playwright` rather
+than the home, so a fresh cell has a browser without downloading one. There is
+no display: it runs headless, and it reaches only what `network.allow` names,
+like everything else here.
+
+All three agents are told it is there. `/opt/cell-instructions.md` is one note
+about what this cell is, linked in at start as Claude Code's
+`~/.claude/CLAUDE.md` and Codex's `~/.codex/AGENTS.md`; opencode reads Claude
+Code's, having no `~/.config/opencode/AGENTS.md` of its own. Replace either
+with a real file inside the cell and that file wins.
 
 ## The firewall
 

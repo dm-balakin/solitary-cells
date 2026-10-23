@@ -78,6 +78,8 @@ network:
     - go.dev                 # the go toolchain's download page
     - dl.google.com          # and the tarball it redirects to
     - golang.org             # the module proxy and the checksum database
+    - cdn.playwright.dev     # the chromium build playwright downloads
+    - storage.googleapis.com # which is where that download redirects
 
 # A bigger disk than its siblings', because a guest booted in here comes out of
 # this: its memory is this machine's memory and its disk is this disk. Memory

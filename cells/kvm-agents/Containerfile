@@ -236,6 +236,32 @@ ENV PATH=/usr/local/go/bin:/home/cell/go/bin:$PATH
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable --install-directory /usr/local/node/bin
 
+# Playwright and the browser it drives, so an agent can open what it is building
+# instead of guessing. The browsers live in the image rather than in the default
+# ~/.cache: the home is a mount from the machine, so a download made during the
+# build would be hidden at run time and every fresh cell would fetch its own.
+# Chromium alone — the other two engines are a rebuild away if anything needs
+# them. Not pinned, like the agents: each build takes Playwright's latest
+# release and the Chromium build that release names.
+#
+# --with-deps is the apt half: a headless Chromium still wants the X, nss and
+# font libraries, and Ubuntu's image has none of them.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+#
+# One mirror rather than Playwright's three. The first two lead to
+# playwright.download.prss.microsoft.com, which network.allow does not name, so
+# every download logged two ENOTFOUND errors before the third, cdn.playwright.dev,
+# served it. Set for the cell as well as the build: a project's own
+# `playwright install` would walk the same list.
+ENV PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.playwright.dev
+
+RUN npm install -g playwright \
+ && npm cache clean --force \
+ && playwright install --with-deps chromium \
+ && rm -rf /var/lib/apt/lists/* \
+ # Readable by whoever the cell turns out to run as.
+ && chmod -R a+rX /opt/ms-playwright
+
 # qemu and lima, so what is developed here can also be run here. solitary
 # drives a lima machine with podman inside it; cell.yaml passes in the node the
 # first of those needs — /dev/kvm — and this is the rest of it: an emulator to
@@ -287,6 +313,12 @@ RUN mkdir -p /etc/claude-code
 # for both; it is in the home directory, so it is not available to the image.
 COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
 
+# What every agent reads as its global context: what this cell is, and that a
+# browser is in it. One file, which cell-init links into the home for Claude
+# Code and Codex — opencode reads Claude Code's copy. Both places are in the
+# home, so neither can be written here.
+COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md
+
 # Applied at every container start, for the things that have to live in the
 # cell's home and so cannot be baked into the image.
 COPY --chmod=0755 cell-init.sh /usr/local/bin/cell-init
@@ -298,6 +330,8 @@ WORKDIR /home/cell
 RUN node --version && npm --version && gh --version && claude --version \
  && codex --version \
  && opencode --version && tmux -V && nvim --version | head -n 1 \
+ && playwright --version \
+ && test -d /opt/ms-playwright \
  && go version && golangci-lint --version && goreleaser --version | head -n 3 \
  && su cell -c 'limactl --version' && qemu-system-x86_64 --version | head -n 1 \
  && test -d /opt/nvim/data/nvim/lazy/LazyVim \

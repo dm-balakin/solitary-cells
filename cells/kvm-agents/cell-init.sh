@@ -47,3 +47,18 @@ else
 	rm -f "$tmp"
 	echo "cell-init: could not add the context7 MCP server for claude" >&2
 fi
+
+# --- the global context every agent reads ------------------------------------
+#
+# Claude Code looks for ~/.claude/CLAUDE.md and Codex for ~/.codex/AGENTS.md;
+# both get the same note, out of the image, so a rebuild updates it. opencode
+# needs no link of its own: with no ~/.config/opencode/AGENTS.md it reads
+# Claude Code's. Only ever over our own symlink — a real file here was written
+# by hand inside the cell and wins.
+mkdir -p "$HOME/.claude" "$HOME/.codex"
+
+for context in "$HOME/.claude/CLAUDE.md" "$HOME/.codex/AGENTS.md"; do
+	if [ ! -e "$context" ] || [ -L "$context" ]; then
+		ln -sfn /opt/cell-instructions.md "$context"
+	fi
+done
