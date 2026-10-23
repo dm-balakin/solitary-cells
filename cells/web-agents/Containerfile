@@ -44,7 +44,7 @@ RUN git config --system credential."https://github.com".helper '!/usr/bin/gh aut
 
 # nvm, installed system-wide so both this build and later shells see it.
 ENV NVM_DIR=/usr/local/nvm
-ENV NVM_VERSION=v0.40.6
+ENV NVM_VERSION=v0.40.8
 ENV NODE_VERSION=24
 
 RUN mkdir -p "$NVM_DIR" \
@@ -133,8 +133,10 @@ RUN mkdir -p /etc/tmux/plugins \
  && git clone --depth 1 https://github.com/tmux-plugins/tpm /etc/tmux/plugins/tpm \
  && git clone --depth 1 https://github.com/tmux-plugins/tmux-sensible /etc/tmux/plugins/tmux-sensible \
  # Pinned: the theme is the visible half of this config, and it should not
- # change because an image was rebuilt on a different day.
- && git clone --depth 1 --branch v2.3.0 https://github.com/catppuccin/tmux /etc/tmux/plugins/tmux
+ # change because an image was rebuilt on a different day. A release ahead of
+ # the host's v2.3.0, like tmux: 2.3.1 and 2.3.2 fix the command prompt and
+ # message styling that tmux 3.7 broke.
+ && git clone --depth 1 --branch v2.3.2 https://github.com/catppuccin/tmux /etc/tmux/plugins/tmux
 
 # tmux is the quietest of them: given a config file it cannot read, it starts
 # anyway with none of this applied and reports nothing.
@@ -146,7 +148,7 @@ COPY --chmod=0755 agent-status /usr/local/bin/agent-status
 
 # Neovim, from the project's own tarball: Ubuntu's package is far too old for
 # LazyVim. The version matches the host's.
-ENV NVIM_VERSION=v0.12.5
+ENV NVIM_VERSION=v0.12.6
 
 RUN curl -fsSL -o /tmp/nvim.tar.gz \
       "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" \
