@@ -136,18 +136,17 @@ RUN apt-get update \
 # home directory, which is what makes this work here: the cell's home is a
 # mount from the machine and hides whatever the image puts under it.
 #
-# The plugins are cloned during the build rather than installed by TPM on first
-# run, so a fresh cell has a working status bar without pressing anything.
-ENV TMUX_PLUGIN_MANAGER_PATH=/etc/tmux/plugins/
-
-RUN mkdir -p /etc/tmux/plugins \
- && git clone --depth 1 https://github.com/tmux-plugins/tpm /etc/tmux/plugins/tpm \
- && git clone --depth 1 https://github.com/tmux-plugins/tmux-sensible /etc/tmux/plugins/tmux-sensible \
- # Pinned: the theme is the visible half of this config, and it should not
- # change because an image was rebuilt on a different day. A release ahead of
- # the host's v2.3.0, like tmux: 2.3.1 and 2.3.2 fix the command prompt and
- # message styling that tmux 3.7 broke.
- && git clone --depth 1 --branch v2.3.2 https://github.com/catppuccin/tmux /etc/tmux/plugins/tmux
+# The theme is the one plugin, and tmux.conf loads it itself: a plugin manager
+# exists to fetch plugins on first run, and this one is fetched here, so a fresh
+# cell has a working status bar without pressing anything. What tmux-sensible
+# used to add is written into tmux.conf.
+#
+# Pinned: the theme is the visible half of this config, and it should not
+# change because an image was rebuilt on a different day. A release ahead of
+# the host's v2.3.0, like tmux: 2.3.1 and 2.3.2 fix the command prompt and
+# message styling that tmux 3.7 broke.
+RUN git clone --depth 1 --branch v2.3.2 https://github.com/catppuccin/tmux /etc/tmux/catppuccin \
+ && test -f /etc/tmux/catppuccin/catppuccin.tmux
 
 # tmux is the quietest of them: given a config file it cannot read, it starts
 # anyway with none of this applied and reports nothing.
