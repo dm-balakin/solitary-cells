@@ -82,20 +82,20 @@ RUN printf '%s\n' \
 COPY --chmod=0644 prompt.sh /etc/profile.d/solitary-prompt.sh
 RUN echo '. /etc/profile.d/solitary-prompt.sh' >> /etc/bash.bashrc
 
-# The agents. Claude Code and Codex track latest, and none of them updates itself: the
-# container is started over from this image every time the machine boots, so an
-# update downloaded into it lasts until the next boot and is downloaded again
-# after it. `solitary up --rebuild`, or b in the dashboard, builds this file
-# again without a cache, and that is what brings in a newer Claude Code.
+# The agents: Claude Code, Codex and opencode, all at their latest, and none of
+# them updates itself. The container is started over from this image every time
+# the machine boots, so an update downloaded into it lasts until the next boot
+# and is downloaded again after it. `solitary up --rebuild`, or b in the
+# dashboard, builds this file again without a cache, and that is what brings in
+# newer ones.
 #
-# pi is pinned to the host's version, like tmux and nvim below — its extensions
-# are written against this API and a newer pi could refuse to load them — so all
-# its version check could do is offer one this cell should not take.
-ENV PI_VERSION=0.84.3
-ENV DISABLE_AUTOUPDATER=1 PI_SKIP_VERSION_CHECK=1
+# opencode is as it comes, with no config of its own: no LSP, no MCP servers,
+# no plugins. It still reads the cell note, from ~/.claude/CLAUDE.md, which it
+# falls back to when it has no AGENTS.md. Its npm package carries the binary
+# for each platform as a dependency, so npm is all it is fetched from.
+ENV DISABLE_AUTOUPDATER=1 OPENCODE_DISABLE_AUTOUPDATE=1
 
-RUN npm install -g @anthropic-ai/claude-code @openai/codex \
- && npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}" \
+RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai \
  && npm cache clean --force
 
 # tmux, built from source to match the host's version. Ubuntu ships 3.4, which
@@ -137,7 +137,7 @@ RUN mkdir -p /etc/tmux/plugins \
 COPY --chmod=0644 tmux.conf /etc/tmux.conf
 COPY --chmod=0755 system-stats.sh /etc/tmux/system-stats.sh
 # Marks the tmux window an agent runs in. Claude Code's hooks in the managed
-# settings and pi's agent-status extension call it, and tmux.conf shows the mark.
+# settings call it, and tmux.conf shows the mark.
 COPY --chmod=0755 agent-status /usr/local/bin/agent-status
 
 # Neovim, from the project's own tarball: Ubuntu's package is far too old for
@@ -329,7 +329,7 @@ RUN npm install -g "playwright@${PLAYWRIGHT_VERSION}" \
  && npm cache clean --force \
  && playwright install --with-deps chromium \
  && rm -rf /var/lib/apt/lists/* \
- # Readable by whoever the cell turns out to run as, like /opt/pi below.
+ # Readable by whoever the cell turns out to run as.
  && chmod -R a+rX /opt/ms-playwright
 
 # Mesa's drivers for the GPU cell.yaml gives the machine. It is a virtio-gpu,
@@ -360,36 +360,10 @@ RUN mkdir -p /etc/claude-code
 # for both; it is in the home directory, so it is not available to the image.
 COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
 
-# pi's configuration — settings, the focus-dark theme, the two extensions and
-# the skills, all as they are on the host. Claude Code has a managed-settings
-# location outside the home; pi does not, and everything it reads lives under
-# ~/.pi/agent, which is a mount from the machine. So the image parks it here
-# and cell-init links it in at start.
-COPY pi /opt/pi
-
-# The packages settings.json asks for, installed at build rather than by pi on
-# first run: a fresh cell should open an agent, not an npm install. To the
-# lockfile, so a rebuild gets the tree the host has rather than whatever the
-# ranges resolve to today.
-#
-# --legacy-peer-deps because that is how pi installs them itself: the packages
-# declare @earendil-works/pi-* as peers and get them from the pi they run
-# inside, so they are deliberately absent from the lockfile. Without the flag
-# npm calls the lockfile out of sync and refuses.
-#
-# The tree is opened up afterwards rather than with --chmod on the COPY, which
-# would put the file mode on the directories too: a+rX reaches what npm just
-# wrote as well, and cell-init copies this whole directory into the home as the
-# cell's user.
-RUN cd /opt/pi/npm \
- && npm ci --legacy-peer-deps \
- && npm cache clean --force \
- && chmod -R a+rX /opt/pi
-
 # What every agent reads as its global context: what this cell is, the JUCE
-# toolchain and its licence, the GPU and the browser. One file, linked into the
-# three places they look for it by cell-init — all of them are in the home, so
-# none can be written here.
+# toolchain and its licence, the GPU and the browser. One file, which cell-init
+# links into the home for Claude Code and Codex — opencode reads Claude Code's
+# copy. Both places are in the home, so neither can be written here.
 COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md
 
 # Applied at every container start, for the things that have to live in the
@@ -402,7 +376,7 @@ WORKDIR /home/cell
 
 RUN node --version && npm --version && gh --version && claude --version \
  && codex --version \
- && pi --version && tmux -V && nvim --version | head -n 1 \
+ && opencode --version && tmux -V && nvim --version | head -n 1 \
  && playwright --version \
  && rustc --version && cargo --version && cargo clippy --version \
  && command -v eglinfo vulkaninfo >/dev/null \
@@ -414,9 +388,6 @@ RUN node --version && npm --version && gh --version && claude --version \
  && grep -q "project(JUCE VERSION ${JUCE_VERSION} " /opt/JUCE/CMakeLists.txt \
  && test -d /opt/JUCE/modules \
  && test -d /opt/ms-playwright \
- && test -d /opt/pi/npm/node_modules/pi-subagents \
- && test -d /opt/pi/npm/node_modules/pi-web-access \
- && test -d /opt/pi/npm/node_modules/pi-mcp-adapter \
  && test -d /opt/nvim/data/nvim/lazy/LazyVim \
  && test "$(ls /opt/nvim/data/nvim/site/parser | wc -l)" -ge 20 \
  && tree-sitter --version

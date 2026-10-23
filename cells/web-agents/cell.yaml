@@ -1,16 +1,16 @@
 description: >-
-  Claude Code, Codex and pi in tmux, with nvim and node, behind a
+  Claude Code, Codex and opencode in tmux, with nvim and node, behind a
   Surfshark tunnel and a firewall that reaches the three agents, github
   and npm and nothing else.
 
 build: ./Containerfile
 
-# Sets up what has to live in the cell's home — the MCP servers and pi's agent
-# directory — then keeps the container alive.
+# Sets up what has to live in the cell's home — Claude Code's MCP server and
+# the note every agent reads — then keeps the container alive.
 command: /usr/local/bin/cell-init; sleep infinity
 
-# gh reads GH_TOKEN. The agents are not here: Claude Code, Codex and pi all log in
-# inside the cell and keep their credentials in /home/cell, which lives on the
+# gh reads GH_TOKEN. The agents are not here: Claude Code, Codex and opencode all
+# log in inside the cell and keep their credentials in /home/cell, which lives on the
 # machine's disk and outlives the container. The git identity is not here
 # either: it comes from git: in ~/.config/solitary/config.yaml.
 secrets:
@@ -51,11 +51,10 @@ network:
     - anthropic.com # Claude Code: api, console, telemetry
     - claude.ai # signing in
     - claude.com # what Claude Code reaches for docs and account
-    - chatgpt.com # Codex, and pi's default provider: the Codex backend
-    - openai.com # and the auth and api hosts behind both
-    - pi.dev # pi's version check and changelog
-    - opencode.ai # opencode: install script, api and docs
-    - mcp.context7.com # the context7 MCP server, for Claude Code and pi
+    - chatgpt.com # Codex
+    - openai.com # and the auth and api hosts behind it
+    - opencode.ai # opencode: signing in, the subscription's api, models
+    - mcp.context7.com # the context7 MCP server, for Claude Code
     - github.com # gh, git clones, releases, the apt repo for gh
     - githubusercontent.com # raw scripts and release assets
     - npmjs.org # npm, and what mason installs from it

@@ -1,8 +1,8 @@
 # soundor agents cell
 
 A cell for [soundor](https://github.com/soundor/soundor): tmux, nvim, and
-three coding agents — Claude Code, Codex and pi — behind a Surfshark tunnel and a firewall that refuses everything not named
-in `cell.yaml`. It is `web-agents` plus what soundor's JUCE runtime builds a
+three coding agents — Claude Code, Codex and opencode — behind a Surfshark
+tunnel and a firewall that refuses everything not named in `cell.yaml`. It is `web-agents` plus what soundor's JUCE runtime builds a
 plugin with — cmake, ninja, Clang and lld, JUCE's Linux libraries and JUCE
 itself — and [a GPU](#the-gpu) to render with.
 
@@ -34,10 +34,10 @@ is once per cell rather than once per start.
 
 - **Claude Code** — run `claude` and follow the login.
 - **Codex** — run `codex` and follow the login.
-- **pi** — run `pi`, then `/login`, and pick ChatGPT (Codex). There is no
-  browser in the cell to catch the loopback callback, so pi's headless path
-  applies: open the URL on the host and paste the final redirect URL back into
-  the prompt.
+- **opencode** — run `opencode`, then `/connect`, and pick OpenCode Zen or
+  OpenCode Go. It asks for an API key: open opencode.ai/auth on the host, copy
+  the key from there and paste it in. It is kept in
+  `~/.local/share/opencode/auth.json`.
 
 ## What comes from the host
 
@@ -49,23 +49,14 @@ configuration:
 | --- | --- |
 | nvim + plugins, mason tools, treesitter parsers | `dm-balakin/nvim-config`, built at image build |
 | tmux 3.7c, catppuccin | pinned to the host's versions |
-| pi settings, `focus-dark`, extensions, skills | `pi/`, copied from `~/.pi/agent` |
 | Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
-
-`pi/` is a snapshot, not a link: when you change something under `~/.pi/agent`
-on the host and want it here, copy it across and rebuild.
-
-Inside the cell, `~/.pi/agent/themes`, `extensions` and `skills` are symlinks
-into `/opt/pi`, so a rebuild updates them. `settings.json` and `npm/` are seeded
-once and then yours — pi writes to both when you change a model or add a
-package, and those changes survive the container being recreated.
 
 ## Updating
 
 Nothing in the cell updates itself. The container is started over from the image
 every time the machine boots, so an update an agent downloads into it is gone by
-the next boot — Claude Code's auto-updater is off, and pi's, gh's and npm's
-version notices with it. Codex can still mention a newer release; the rebuild
+the next boot — Claude Code's and opencode's auto-updaters are off, and gh's and
+npm's version notices with them. Codex can still mention a newer release; the rebuild
 is what brings it in. Update by rebuilding instead:
 
 ```sh
@@ -73,7 +64,7 @@ solitary up --rebuild soundor-agents
 ```
 
 or `b` in `solitary dashboard`. That builds the `Containerfile` again without a
-cache, so Claude Code, Codex and gh come in at their latest and everything
+cache, so Claude Code, Codex, opencode and gh come in at their latest and everything
 pinned stays where it is pinned. The home is kept; every session in the cell
 ends.
 
@@ -152,9 +143,9 @@ like everything else here.
 
 All three agents are told it is there, along with the JUCE rules and the GPU.
 `/opt/cell-instructions.md` is one note about what this cell is, linked in at
-start as Claude Code's `~/.claude/CLAUDE.md`, Codex's `~/.codex/AGENTS.md` and
-pi's `~/.pi/agent/AGENTS.md`; replace any of them with a real file inside the
-cell and that file wins.
+start as Claude Code's `~/.claude/CLAUDE.md` and Codex's `~/.codex/AGENTS.md`;
+opencode reads Claude Code's, having no `~/.config/opencode/AGENTS.md` of its
+own. Replace either with a real file inside the cell and that file wins.
 
 ## The GPU
 
@@ -184,11 +175,11 @@ started with `limactl start` directly: the qemu arguments are passed by
 solitary at every start rather than kept anywhere. This needs a solitary with
 `gpu:` (0.15.0 or later).
 
-## The firewall and pi
+## The firewall
 
-`pi-web-access` is installed, but the cell only resolves and reaches the names
-in `cell.yaml`. Fetching an arbitrary URL fails, and it fails as a DNS error
-rather than a timeout. Add the domain to `network.allow` if you want it,
-remembering that everything in that list is reachable by every agent here. The
-list is a machine setting, so it applies at the next boot rather than at a
+The cell only resolves and reaches the names in `cell.yaml`, so an agent's web
+fetch of an arbitrary URL fails, and it fails as a DNS error rather than a
+timeout. Add the domain to `network.allow` if you want it, remembering that
+everything in that list is reachable by every agent here. The list is a machine
+setting, so it applies at the next boot rather than at a
 rebuild: `solitary down soundor-agents && solitary up soundor-agents`.

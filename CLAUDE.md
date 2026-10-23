@@ -72,8 +72,8 @@ This decides what a change costs, and it is worth saying in the commit message:
   next boot. `up` warns on a running machine; the cell has to go down first.
 - `cell-init.sh` — every container start. Everything in it must stay
   idempotent, and it must not clobber what the agents write: `~/.claude.json`
-  holds the login and the session history, so it is merged with `jq`, and pi's
-  `settings.json` and `npm/` are seeded only when absent.
+  holds the login and the session history, so it is merged with `jq`, and a
+  real file where it would link the cell note is left alone.
 
 ## The firewall is the constraint
 
@@ -88,19 +88,12 @@ entry saying who needs it.
 ## Versions
 
 The `Containerfile` pins everything with an `ENV *_VERSION` near what uses it.
-nvim, tmux, pi, tree-sitter, lima and JUCE are pinned *to the host's*
+nvim, tmux, tree-sitter, lima and JUCE are pinned *to the host's*
 versions on purpose — the point of a cell is that it works the way this machine
 does — so bumping one means checking the host rather than picking the latest.
 Ubuntu, node, go, golangci-lint, goreleaser and Playwright are pinned to what
-the work needs.
-
-## `pi/` is a snapshot
-
-`cells/*/pi/` is a copy of `~/.pi/agent` taken by hand. It is not generated and
-not linked, so never regenerate it from the host as a side effect of another
-change. Inside a cell, `themes`, `extensions` and `skills` are symlinked out of
-`/opt/pi` (a rebuild updates them) while `settings.json` and `npm/` are seeded
-once and then belong to pi.
+the work needs. The agents — Claude Code, Codex and opencode — are not pinned
+at all: each build takes their latest, and none of them updates itself.
 
 ## Never commit
 

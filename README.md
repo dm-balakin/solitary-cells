@@ -16,7 +16,7 @@ machine and is named in `.gitignore`; see [Secrets](#secrets) below.
 
 | Cell | What it is |
 | --- | --- |
-| [`web-agents`](cells/web-agents) | Claude Code, Codex and pi in tmux, with nvim and node |
+| [`web-agents`](cells/web-agents) | Claude Code, Codex and opencode in tmux, with nvim and node |
 | [`kvm-agents`](cells/kvm-agents) | `web-agents` plus the Go toolchain, qemu, lima and `/dev/kvm` — where `solitary` itself is developed |
 | [`soundor-agents`](cells/soundor-agents) | `web-agents` plus what [soundor](https://github.com/soundor/soundor) builds a plugin with — cmake, ninja, Clang, lld and JUCE — and the host's GPU to render with |
 
@@ -59,12 +59,8 @@ cells/<name>/
   README.md                 what this cell is
   prompt.sh tmux.conf system-stats.sh statusline.sh claude-settings.json
   nvim-bootstrap.lua        the shell, tmux and editor the cell comes up in
-  pi/                       a snapshot of ~/.pi/agent — settings, theme,
-                            extensions, skills, packages
+  agent-status              marks a tmux window with what Claude Code is doing
 ```
-
-`pi/` is a snapshot and not a link. Change something under `~/.pi/agent` on the
-host, and getting it into a cell means copying it across here and rebuilding.
 
 ## Secrets
 
