@@ -1,5 +1,5 @@
 description: >-
-  Claude Code, Codex and pi in tmux, with nvim, workmux and node, behind a
+  Claude Code, Codex and pi in tmux, with nvim and node, behind a
   Surfshark tunnel and a firewall that reaches the three agents, github
   and npm and nothing else.
 

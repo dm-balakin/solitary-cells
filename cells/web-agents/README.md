@@ -1,8 +1,9 @@
 # web agents cell
 
-A cell you drive from a terminal: tmux and workmux running git worktrees, nvim,
-and three coding agents — Claude Code, Codex and pi — behind a Surfshark tunnel
-and a firewall that refuses everything not named in `cell.yaml`. Node with
+A cell you drive from a terminal: tmux, nvim, and three coding agents — Claude
+Code, Codex and pi — behind a Surfshark tunnel and a firewall that refuses
+everything not named in `cell.yaml`. Each tmux window's tab shows what the agent
+in it is doing: 🤖 working, 💬 waiting for you, ✅ done. Node with
 corepack is the toolchain in it; a web project's own package manager comes from
 its package.json.
 
@@ -43,9 +44,9 @@ configuration:
 | In the cell | Where it comes from |
 | --- | --- |
 | nvim + plugins, mason tools, treesitter parsers | `dm-balakin/nvim-config`, built at image build |
-| tmux 3.7c, catppuccin, workmux | pinned to the host's versions |
+| tmux 3.7c, catppuccin | pinned to the host's versions |
 | pi settings, `focus-dark`, extensions, skills | `pi/`, copied from `~/.pi/agent` |
-| Claude Code statusline and workmux hooks | `statusline.sh`, `claude-settings.json` |
+| Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
 
 `pi/` is a snapshot, not a link: when you change something under `~/.pi/agent`
 on the host and want it here, copy it across and rebuild.

@@ -65,11 +65,11 @@ configuration:
 | In the cell | Where it comes from |
 | --- | --- |
 | nvim + plugins, mason tools, treesitter parsers | `dm-balakin/nvim-config`, built at image build |
-| tmux 3.7c, catppuccin, workmux | pinned to the host's versions |
+| tmux 3.7c, catppuccin | pinned to the host's versions |
 | pi settings, `focus-dark`, extensions, skills | `pi/`, copied from `~/.pi/agent` |
 | go, golangci-lint, goreleaser | pinned in the `Containerfile` |
 | /dev/kvm | the machine's own node, passed in by `devices:` |
-| Claude Code statusline and workmux hooks | `statusline.sh`, `claude-settings.json` |
+| Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
 
 `pi/` is a snapshot, not a link: when you change something under `~/.pi/agent`
 on the host and want it here, copy it across and rebuild.

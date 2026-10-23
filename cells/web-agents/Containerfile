@@ -3,8 +3,8 @@ FROM docker.io/library/ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Without this the image has no locale at all, and every terminal program falls
-# back to ASCII: tmux rewrites each wide character as an underscore, so workmux's
-# status glyphs and anything else non-ASCII arrive mangled. C.UTF-8 is built into
+# back to ASCII: tmux rewrites each wide character as an underscore, so the
+# agents' status marks and anything else non-ASCII arrive mangled. C.UTF-8 is built into
 # glibc, so it needs no locale package.
 ENV LANG=C.UTF-8
 
@@ -136,15 +136,9 @@ RUN mkdir -p /etc/tmux/plugins \
 # anyway with none of this applied and reports nothing.
 COPY --chmod=0644 tmux.conf /etc/tmux.conf
 COPY --chmod=0755 system-stats.sh /etc/tmux/system-stats.sh
-
-# workmux, pinned to the version on the host. Its sandboxing is not configured:
-# the cell is already the boundary, and a Lima VM inside a Lima VM is not a
-# thing. It drives git worktrees and tmux windows here, nothing else.
-ENV WORKMUX_VERSION=v0.1.232
-
-RUN curl -fsSL https://raw.githubusercontent.com/raine/workmux/main/scripts/install.sh \
-      | WORKMUX_INSTALL_DIR=/usr/local/bin bash \
- && workmux --version
+# Marks the tmux window an agent runs in. Claude Code's hooks in the managed
+# settings and pi's agent-status extension call it, and tmux.conf shows the mark.
+COPY --chmod=0755 agent-status /usr/local/bin/agent-status
 
 # Neovim, from the project's own tarball: Ubuntu's package is far too old for
 # LazyVim. The version matches the host's.
@@ -247,10 +241,9 @@ ENV TZ=Europe/Belgrade
 COPY --chmod=0755 statusline.sh /usr/local/bin/claude-statusline
 RUN mkdir -p /etc/claude-code
 
-# Managed settings carry the statusline and the workmux hooks that colour a
-# tmux window by what the agent is doing. ~/.claude/settings.json would be the
-# usual place for both; it is in the home directory, so it is not available to
-# the image, and 'workmux setup' cannot write it during a build either.
+# Managed settings carry the statusline and the hooks that mark a tmux window
+# with what the agent is doing. ~/.claude/settings.json would be the usual place
+# for both; it is in the home directory, so it is not available to the image.
 COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
 
 # pi's configuration — settings, the focus-dark theme, the two extensions and
@@ -294,7 +287,7 @@ WORKDIR /home/cell
 
 RUN node --version && npm --version && gh --version && claude --version \
  && codex --version \
- && pi --version && tmux -V && workmux --version && nvim --version | head -n 1 \
+ && pi --version && tmux -V && nvim --version | head -n 1 \
  && playwright --version \
  && test -d /opt/ms-playwright \
  && test -d /opt/pi/npm/node_modules/pi-subagents \

@@ -1,8 +1,7 @@
 # soundor agents cell
 
-A cell for [soundor](https://github.com/soundor/soundor): tmux and workmux
-running git worktrees, nvim, and three coding agents — Claude Code, Codex and
-pi — behind a Surfshark tunnel and a firewall that refuses everything not named
+A cell for [soundor](https://github.com/soundor/soundor): tmux, nvim, and
+three coding agents — Claude Code, Codex and pi — behind a Surfshark tunnel and a firewall that refuses everything not named
 in `cell.yaml`. It is `web-agents` plus what soundor's JUCE runtime builds a
 plugin with — cmake, ninja, Clang and lld, JUCE's Linux libraries and JUCE
 itself — and [a GPU](#the-gpu) to render with.
@@ -49,9 +48,9 @@ configuration:
 | In the cell | Where it comes from |
 | --- | --- |
 | nvim + plugins, mason tools, treesitter parsers | `dm-balakin/nvim-config`, built at image build |
-| tmux 3.7c, catppuccin, workmux | pinned to the host's versions |
+| tmux 3.7c, catppuccin | pinned to the host's versions |
 | pi settings, `focus-dark`, extensions, skills | `pi/`, copied from `~/.pi/agent` |
-| Claude Code statusline and workmux hooks | `statusline.sh`, `claude-settings.json` |
+| Claude Code statusline and window-mark hooks | `statusline.sh`, `claude-settings.json` |
 
 `pi/` is a snapshot, not a link: when you change something under `~/.pi/agent`
 on the host and want it here, copy it across and rebuild.

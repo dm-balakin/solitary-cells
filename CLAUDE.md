@@ -88,7 +88,7 @@ entry saying who needs it.
 ## Versions
 
 The `Containerfile` pins everything with an `ENV *_VERSION` near what uses it.
-nvim, tmux, workmux, pi, tree-sitter, lima and JUCE are pinned *to the host's*
+nvim, tmux, pi, tree-sitter, lima and JUCE are pinned *to the host's*
 versions on purpose — the point of a cell is that it works the way this machine
 does — so bumping one means checking the host rather than picking the latest.
 Ubuntu, node, go, golangci-lint, goreleaser and Playwright are pinned to what

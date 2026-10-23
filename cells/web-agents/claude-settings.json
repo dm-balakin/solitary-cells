@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status working"
+            "command": "agent-status working || true"
           }
         ]
       }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status working"
+            "command": "agent-status working || true"
           }
         ]
       }
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status waiting"
+            "command": "agent-status waiting || true"
           }
         ]
       }
@@ -40,7 +40,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "workmux set-window-status done"
+            "command": "agent-status done || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-status clear || true"
           }
         ]
       }
