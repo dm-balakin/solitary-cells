@@ -19,12 +19,23 @@ RUN apt-get update \
  # LazyVim, expects the real name.
  && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-# GitHub CLI, from its own apt repository rather than a distro snapshot.
-RUN mkdir -p -m 755 /etc/apt/keyrings \
- && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-      -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
- && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
- && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+# GitHub CLI, from its own apt repository rather than a distro snapshot, so apt
+# verifies every package against GitHub's signing key — once the keyring is
+# shown to hold the key below, as cli.github.com's own install page lists it. A
+# gh release changes nothing here, and a new key is a change worth noticing, so
+# a keyring without it fails the build rather than being trusted because it
+# arrived over HTTPS.
+ARG GH_KEY_FINGERPRINT=7F38BBB59D064DBCB3D84D725612B36462313325
+
+RUN keyring=/etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && mkdir -p -m 755 /etc/apt/keyrings \
+ && curl -fsSL -o "$keyring" https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+ && chmod go+r "$keyring" \
+ && if ! gpg --show-keys --with-colons "$keyring" | grep -q "^fpr:*${GH_KEY_FINGERPRINT}:"; then \
+      echo "GitHub CLI's keyring no longer holds ${GH_KEY_FINGERPRINT}; check cli.github.com and update GH_KEY_FINGERPRINT" >&2; \
+      exit 1; \
+    fi \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=$keyring] https://cli.github.com/packages stable main" \
       > /etc/apt/sources.list.d/github-cli.list \
  && apt-get update \
  && apt-get install -y --no-install-recommends gh \
