@@ -285,9 +285,12 @@ RUN git clone --depth 1 --branch "${JUCE_VERSION}" \
 # rustup-init is fetched from static.rust-lang.org directly rather than through
 # sh.rustup.rs, which would only be one more host for network.allow. The minimal
 # profile leaves out the docs, and clippy and rustfmt are what an agent wants.
-# Pinned because the toolchain is part of what a build means; no host in this
-# setup carries Rust to match, so it is the version the work needs.
-ENV RUST_VERSION=1.90.0
+#
+# The toolchain is stable at its latest, like the agents: no host in this setup
+# carries Rust to match, and a project that needs a particular one names it in
+# its rust-toolchain.toml, which rustup honours over this default. A `rustup
+# update` inside the cell writes to /opt, which is the container's and gone at
+# the next boot, so `solitary up --rebuild` is what brings in a newer stable.
 ENV RUSTUP_HOME=/opt/rustup
 ENV PATH=/opt/rustup/bin:$PATH
 
@@ -295,7 +298,7 @@ RUN curl -fsSL -o /tmp/rustup-init \
       "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init" \
  && chmod +x /tmp/rustup-init \
  && CARGO_HOME=/opt/rustup /tmp/rustup-init -y --no-modify-path --profile minimal \
-      --default-toolchain "${RUST_VERSION}" -c clippy -c rustfmt \
+      --default-toolchain stable -c clippy -c rustfmt \
  && rm /tmp/rustup-init \
  && chmod -R a+rX /opt/rustup
 

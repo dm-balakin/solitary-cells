@@ -92,8 +92,9 @@ nvim, tmux, tree-sitter, lima and JUCE are pinned *to the host's*
 versions on purpose — the point of a cell is that it works the way this machine
 does — so bumping one means checking the host rather than picking the latest.
 Ubuntu, node, go, golangci-lint, goreleaser and Playwright are pinned to what
-the work needs. The agents — Claude Code, Codex and opencode — are not pinned
-at all: each build takes their latest, and none of them updates itself.
+the work needs. The agents — Claude Code, Codex and opencode — and Rust's
+stable toolchain are not pinned at all: each build takes their latest, and
+none of them updates itself.
 
 ## Never commit
 
