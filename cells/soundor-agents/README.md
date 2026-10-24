@@ -124,10 +124,12 @@ neither a generator nor a compiler. `cc` and `c++` point at Clang too, so
 keeps the generator and compiler it was first configured with, so one made
 under Makefiles or gcc has to be deleted rather than reused.
 
-The LLVM tools are all version 21, Ubuntu 26.04's: `clang`, `lld`, `clangd`,
-`clang-format` and `clang-tidy`. gcc stays installed because Clang uses its C++
-standard library and glibc headers, and it is there for anything that asks for
-`gcc` or `g++` by name.
+The cell is on Ubuntu 24.04 where the other two are on 26.04: soundor supports
+noble and its engine is prebuilt on it, so a plugin built here links against
+the same system it ships for. The LLVM tools are all version 18, noble's:
+`clang`, `lld`, `clangd`, `clang-format` and `clang-tidy`, with cmake 3.28.
+gcc stays installed because Clang uses its C++ standard library and glibc
+headers, and it is there for anything that asks for `gcc` or `g++` by name.
 
 A plugin builds, but nothing in the cell can play it: there is no audio device
 and no display, so a Standalone has nothing to open. Build here; listen on the

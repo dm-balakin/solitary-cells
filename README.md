@@ -25,9 +25,10 @@ it can reach. The other two are copies of the first rather than layers on top
 of it: a cell's build context is the directory its `Containerfile` sits in, so
 there is no way to share one. A change to one is a change to make to all three.
 
-All three are built on `ubuntu:26.04` with every published update applied at
-build, run behind a Surfshark tunnel, and resolve and reach only the domains
-their `cell.yaml` names — an unlisted host does not resolve at all. The versions
+web-agents and kvm-agents are built on `ubuntu:26.04` and soundor-agents on
+`ubuntu:24.04`, which soundor supports and prebuilds its engine on. All three
+have every published update applied at build, run behind a Surfshark tunnel,
+and resolve and reach only the domains their `cell.yaml` names — an unlisted host does not resolve at all. The versions
 that make a cell feel like this machine (nvim, lima) are pinned in the
 `Containerfile` to the host's; tmux is pinned to its latest release.
 

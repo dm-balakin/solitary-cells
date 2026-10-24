@@ -10,7 +10,7 @@ a compiler:
 
 - JUCE is at `/opt/JUCE`, a path soundor finds on its own. Leave `jucePath` and
   `JUCE_DIR` unset unless a project really wants another copy.
-- `cmake`, `ninja`, Clang 21 (`clang`, `clang++`, and `cc`/`c++` point at
+- `cmake`, `ninja`, Clang 18 (`clang`, `clang++`, and `cc`/`c++` point at
   them), `lld`, `clangd`, `clang-format` and `clang-tidy` are on PATH.
 - Builds use Clang and lld by default: `CC=clang`, `CXX=clang++`,
   `LDFLAGS=-fuse-ld=lld` and `CMAKE_GENERATOR=Ninja` are set. A build directory

@@ -1,7 +1,10 @@
-# Ubuntu 26.04 LTS, pinned to the release rather than to an image: the tag
-# follows Ubuntu's refreshed images within 26.04 and never moves to the next
-# LTS on its own, so changing release stays a deliberate edit here.
-FROM docker.io/library/ubuntu:26.04
+# Ubuntu 24.04 LTS, where the other cells are on 26.04: soundor supports noble
+# and its engine is prebuilt on it, so this is where a plugin is built against
+# what it ships with — and noble's Clang 18 and cmake 3.28 are the ones soundor
+# supports. Pinned to the release rather than to an image: the tag follows
+# Ubuntu's refreshed images within 24.04 and never moves to the next LTS on its
+# own, so changing release stays a deliberate edit here.
+FROM docker.io/library/ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -128,11 +131,14 @@ ENV DISABLE_AUTOUPDATER=1 OPENCODE_DISABLE_AUTOUPDATE=1 \
 RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai \
  && npm cache clean --force
 
-# tmux, built from source for its version alone: Ubuntu's own would read
-# tmux.conf too, extended-keys-format included, but it is older than the host's.
-# This is the one pin here that is ahead of the host rather than matched to it:
-# tmux's latest release, which the host's packages have not caught up with.
-# tmux.conf and the theme behave the same on it as on the host's 3.7c.
+# tmux, built from source. Ubuntu 24.04 ships 3.4, which does not know
+# extended-keys-format; tmux stops reading a config file at the first unknown
+# option, so on 3.4 everything below that line — the theme, the key bindings,
+# the window marks — is silently skipped.
+#
+# The one pin here that is ahead of the host rather than matched to it: tmux's
+# latest release, which the host's packages have not caught up with. tmux.conf
+# and the theme behave the same on it as on the host's 3.7c.
 ENV TMUX_VERSION=3.8
 
 RUN apt-get update \
@@ -233,7 +239,7 @@ RUN mkdir -p /opt/nvim/config /opt/nvim/data \
  && timeout 1800 nvim --headless "+Lazy! sync" -c "luafile /opt/nvim/bootstrap.lua"
 
 # The C++ half of soundor. Its JUCE runtime configures with cmake, which has to
-# be 3.22 or newer — Ubuntu 26.04's is 4.2 — and builds with whatever compiler cmake
+# be 3.22 or newer — noble's is 3.28 — and builds with whatever compiler cmake
 # is pointed at.
 #
 # CMAKE_GENERATOR because soundor never passes -G: without it every build is
@@ -247,7 +253,7 @@ RUN mkdir -p /opt/nvim/config /opt/nvim/data \
 # compiled out by soundor's setup.cmake, and in anyway for a project that does
 # not.
 #
-# The LLVM tools are all Ubuntu 26.04's 21, so the compiler, the linker, clangd,
+# The LLVM tools are all noble's 18, so the compiler, the linker, clangd,
 # clang-format and clang-tidy agree about the language they read.
 ENV CMAKE_GENERATOR=Ninja
 
@@ -267,8 +273,8 @@ RUN apt-get update \
 # soundor names neither, so cmake takes CC and CXX from the environment, and
 # LDFLAGS too, the first time it configures a build directory — a directory
 # keeps the compiler it was configured with, so one made under gcc has to go.
-# soundor sets no CMAKE_LINKER_TYPE either, so lld comes in as -fuse-ld=lld,
-# which cmake passes to every link.
+# There is no linker setting a cmake this old understands on its own:
+# CMAKE_LINKER_TYPE arrived in 3.29, so lld comes in as -fuse-ld=lld.
 #
 # cc and c++ point at clang as well, for whatever asks for those names instead:
 # soundor's own doctor reports the compiler it finds as c++, and a doctor that

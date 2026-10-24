@@ -44,8 +44,10 @@ genuinely differs:
   three Skia entries in `network.allow` (`skia.googlesource.com`,
   `chromium.googlesource.com`, `chrome-infra-packages.appspot.com`) and the
   two for Rust (`crates.io`, `rust-lang.org`)
-- `Containerfile` — the cmake/LLVM/JUCE-libraries block, the Clang and lld
-  defaults, the JUCE clone, the Mesa block, the Rust block, the comment on the
+- `Containerfile` — the `FROM` line and the comment above it (Ubuntu 24.04,
+  which soundor supports and prebuilds its engine on, against web-agents'
+  26.04), the tmux comment that names 24.04's 3.4, the cmake/LLVM/JUCE-libraries
+  block, the Clang and lld defaults, the JUCE clone, the Mesa block, the Rust block, the comment on the
   `cell-instructions.md` `COPY`, and their checks in the final `RUN`
 - `cell-instructions.md` — the JUCE, licence, Rust and GPU sections
 - `README.md` — the cell it describes
