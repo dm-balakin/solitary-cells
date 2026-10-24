@@ -36,7 +36,7 @@ agents:
 # inside it.
 ports:
   - 3000
-  - 5173  # vite, which is what solitary's docs site runs on under `pnpm dev`
+  - 5173  # vite's dev server
 
 # The one device this cell is given. The host allows nested virtualisation and
 # the machine's kernel has the node, so a guest started in here is a third
