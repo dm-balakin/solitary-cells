@@ -149,6 +149,11 @@ start as Claude Code's `~/.claude/CLAUDE.md` and Codex's `~/.codex/AGENTS.md`;
 opencode reads Claude Code's, having no `~/.config/opencode/AGENTS.md` of its
 own. Replace either with a real file inside the cell and that file wins.
 
+The note is only what this cell adds. How a cell works in general — that the
+home is what survives a restart, that a refused name fails to resolve, the
+inbox, publishing with `artifact` — comes from solitary itself: `up` installs
+its in-cell skills for the three agents `cell.yaml` names under `agents:`.
+
 ## The GPU
 
 The machine renders on the host's GPU without taking it from the host.

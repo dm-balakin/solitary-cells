@@ -95,11 +95,17 @@ than the home, so a fresh cell has a browser without downloading one. There is
 no display: it runs headless, and it reaches only what `network.allow` names,
 like everything else here.
 
-All three agents are told it is there. `/opt/cell-instructions.md` is one note
-about what this cell is, linked in at start as Claude Code's
-`~/.claude/CLAUDE.md` and Codex's `~/.codex/AGENTS.md`; opencode reads Claude
-Code's, having no `~/.config/opencode/AGENTS.md` of its own. Replace either
-with a real file inside the cell and that file wins.
+All three agents are told it is there, along with `/dev/kvm`, qemu and lima,
+and the Go toolchain. `/opt/cell-instructions.md` is one note about what this
+cell is, linked in at start as Claude Code's `~/.claude/CLAUDE.md` and Codex's
+`~/.codex/AGENTS.md`; opencode reads Claude Code's, having no
+`~/.config/opencode/AGENTS.md` of its own. Replace either with a real file
+inside the cell and that file wins.
+
+The note is only what this cell adds. How a cell works in general — that the
+home is what survives a restart, that a refused name fails to resolve, the
+inbox, publishing with `artifact` — comes from solitary itself: `up` installs
+its in-cell skills for the three agents `cell.yaml` names under `agents:`.
 
 ## The firewall
 

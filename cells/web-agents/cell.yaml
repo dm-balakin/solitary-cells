@@ -17,6 +17,16 @@ secrets:
   GH_TOKEN:
     description: a token gh and git push authenticate with
 
+# The agents the image runs, named so that solitary's in-cell skills — what
+# survives a restart, a refused name, the inbox, publishing with artifact — are
+# in the home from each one's first session. Left out, up would find them by
+# their config directories, which only exist once an agent has run, and the
+# skills would arrive one start late.
+agents:
+  - claude-code
+  - codex
+  - opencode
+
 # Only this port reaches the host. Everything else the cell listens on stays
 # inside it.
 ports:

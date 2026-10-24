@@ -1,9 +1,6 @@
-# This is a cell
+# What this cell adds
 
-A `solitary` cell: a container on its own machine, with a home that outlives it
-and a firewall that refuses every name `cell.yaml` does not list. An unlisted
-host fails to resolve rather than to time out, so a DNS error usually means the
-firewall and not the network.
+solitary's own skills cover how a cell works. This is what this one has on top.
 
 ## A browser is installed
 
@@ -22,3 +19,16 @@ Two things about it here:
 A project that pins its own `playwright` reuses that Chromium when the versions
 agree; when they do not, let it install its own into the project rather than
 adding a browser to the image by hand.
+
+## Node is installed
+
+Node 24 is on PATH, installed with nvm. Both live in `/usr/local` rather than
+the home, so anything written there is the container's and gone at the next
+boot: another version from `nvm install`, and a package from `npm install -g`.
+If a project needs either for good, say so — it belongs in the image. A
+project's own `node_modules`, and npm's cache in `~/.npm`, are in the home and
+last.
+
+corepack is enabled, so pnpm and yarn come at the version a project's
+`package.json` names in `packageManager`, without asking. Do not install either
+with `npm install -g`.

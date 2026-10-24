@@ -27,6 +27,7 @@ things that genuinely differ. Those are, and only these:
   fits alongside the other in /dev/shm and web-agents crashed at 7
 - `Containerfile` — the Go, qemu/lima and `useradd` blocks, and the extra
   version checks in the final `RUN`
+- `cell-instructions.md` — the virtual machines and Go sections
 - `README.md` — the cell it describes
 
 `diff -r cells/web-agents cells/kvm-agents` should show those and nothing else.
@@ -38,11 +39,12 @@ genuinely differs:
 
 - `cell.yaml` — `description`, the JUCE licence comment, `gpu: true`, and the
   three Skia entries in `network.allow` (`skia.googlesource.com`,
-  `chromium.googlesource.com`, `chrome-infra-packages.appspot.com`)
+  `chromium.googlesource.com`, `chrome-infra-packages.appspot.com`) and the
+  two for Rust (`crates.io`, `rust-lang.org`)
 - `Containerfile` — the cmake/LLVM/JUCE-libraries block, the Clang and lld
-  defaults, the JUCE clone, the Mesa block, the comment on the
+  defaults, the JUCE clone, the Mesa block, the Rust block, the comment on the
   `cell-instructions.md` `COPY`, and their checks in the final `RUN`
-- `cell-instructions.md` — the JUCE, licence and GPU sections
+- `cell-instructions.md` — the JUCE, licence, Rust and GPU sections
 - `README.md` — the cell it describes
 
 `diff -r cells/web-agents cells/soundor-agents` should show those and nothing
@@ -82,8 +84,8 @@ but to its latest release, ahead of the host's packages. Ubuntu and node are
 pinned to what the work needs, and go, golangci-lint and goreleaser to what
 solitary's own CI runs — `go.mod`, `verify.yml` and the release workflow. Not
 pinned at all are the agents (Claude Code, Codex and opencode), Playwright and
-Rust's stable toolchain: each build takes their latest, and none of them updates
-itself.
+soundor-agents' Rust stable toolchain: each build takes their latest, and none
+of them updates itself.
 
 ## Never commit
 
