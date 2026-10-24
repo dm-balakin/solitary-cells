@@ -82,6 +82,7 @@ network:
     - mcp.context7.com # the context7 MCP server, for Claude Code
     - github.com # gh, git clones, releases, the apt repo for gh
     - githubusercontent.com # raw scripts and release assets
+    - github:actions-results # Actions logs and artifacts, for gh run view --log
     - npmjs.org # npm, and what mason installs from it
     - nodejs.org # the node nvm installs
     - ubuntu.com # apt
