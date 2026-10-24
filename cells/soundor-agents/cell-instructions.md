@@ -52,8 +52,8 @@ writes is the container's and gone at the next boot: a `rustup update`, an
 added component or target, and the toolchain a project's `rust-toolchain.toml`
 asks for, which is downloaded again after every restart. If a project needs one
 for good, say so — it belongs in the image. `~/.cargo` is in the home, so the
-registry cache and what `cargo install` puts in `~/.cargo/bin` do last. That
-directory is not on PATH, so run what is in it by its path.
+registry cache and what `cargo install` puts in `~/.cargo/bin` do last, and
+`~/.cargo/bin` is on PATH.
 
 ## A GPU is available
 

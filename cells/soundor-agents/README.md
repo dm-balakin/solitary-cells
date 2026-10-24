@@ -76,8 +76,9 @@ Rust's latest stable is installed with rustup under `/opt/rustup`, with clippy
 and rustfmt, and a rebuild brings in a newer one. `network.allow` names
 `crates.io` and `rust-lang.org`, so cargo reaches the registry and rustup the
 toolchain downloads — including the one a project's `rust-toolchain.toml` asks
-for, which wins over stable. `CARGO_HOME` stays in the home (`~/.cargo`), so the registry cache
-and anything from `cargo install` outlive a new container.
+for, which wins over stable. `CARGO_HOME` stays in the home (`~/.cargo`), so
+the registry cache and anything from `cargo install` outlive a new container,
+and `~/.cargo/bin` is on PATH, so what is installed there runs by name.
 
 ## JUCE
 

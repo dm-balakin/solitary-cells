@@ -314,8 +314,10 @@ RUN git clone --depth 1 --branch "${JUCE_VERSION}" \
 # toolchains live in /opt, because the home is a mount from the machine and
 # would hide anything put there at build time; CARGO_HOME is left at its default
 # in the home, so the registry cache and `cargo install` stay writable by
-# whoever the cell runs as and outlive a new container. Only the proxies
-# (cargo, rustc, rustup) are on PATH from the image.
+# whoever the cell runs as and outlive a new container. The proxies (cargo,
+# rustc, rustup) are on PATH from the image, and ~/.cargo/bin after them, so
+# what `cargo install` puts there runs by name — as GOPATH's bin does in
+# kvm-agents.
 #
 # rustup-init is fetched from static.rust-lang.org directly rather than through
 # sh.rustup.rs, which would only be one more host for network.allow. The minimal
@@ -327,7 +329,7 @@ RUN git clone --depth 1 --branch "${JUCE_VERSION}" \
 # update` inside the cell writes to /opt, which is the container's and gone at
 # the next boot, so `solitary up --rebuild` is what brings in a newer stable.
 ENV RUSTUP_HOME=/opt/rustup
-ENV PATH=/opt/rustup/bin:$PATH
+ENV PATH=/opt/rustup/bin:/home/cell/.cargo/bin:$PATH
 
 RUN curl -fsSL -o /tmp/rustup-init \
       "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init" \
