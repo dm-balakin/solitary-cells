@@ -269,10 +269,10 @@ RUN curl -fsSL -o /tmp/go.tar.gz \
 ENV GOPATH=/home/cell/go
 ENV PATH=/usr/local/go/bin:/home/cell/go/bin:$PATH
 
-# The website half of the repository is pnpm, and its version is pinned in
-# package.json for corepack to read. Enabling corepack here means a worktree
-# gets that version rather than whatever is installed; the prompt it would show
-# before downloading one has no one to answer it in an agent's shell.
+# A web project pins its package manager in package.json for corepack to read.
+# Enabling corepack means a worktree gets that version rather than whatever is
+# installed; the prompt it would show before downloading one has no one to
+# answer it in an agent's shell.
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable --install-directory /usr/local/node/bin
 
@@ -309,8 +309,8 @@ RUN npm install -g playwright \
 # client lima talks to a machine over once it is up.
 #
 # A guest booted in here is the third level down: host, cell, guest. Its memory
-# and its disk come out of the cell's, which is why this cell asks for more of
-# both than its sibling.
+# and its disk come out of the cell's, which is why this cell asks for more
+# disk than its siblings.
 #
 # lima matches the host's version, like tmux and nvim: what is developed here
 # is the thing that drives it.
@@ -353,8 +353,9 @@ RUN mkdir -p /etc/claude-code
 # for both; it is in the home directory, so it is not available to the image.
 COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
 
-# What every agent reads as its global context: what this cell is, and that a
-# browser is in it. One file, which cell-init links into the home for Claude
+# What every agent reads as its global context: what this cell adds to the
+# skills solitary gives every cell — /dev/kvm with qemu and lima, Go, the
+# browser and node. One file, which cell-init links into the home for Claude
 # Code and Codex — opencode reads Claude Code's copy. Both places are in the
 # home, so neither can be written here.
 COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md

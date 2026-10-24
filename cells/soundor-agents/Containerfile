@@ -400,10 +400,11 @@ RUN mkdir -p /etc/claude-code
 # for both; it is in the home directory, so it is not available to the image.
 COPY --chmod=0644 claude-settings.json /etc/claude-code/managed-settings.json
 
-# What every agent reads as its global context: what this cell is, the JUCE
-# toolchain and its licence, the GPU and the browser. One file, which cell-init
-# links into the home for Claude Code and Codex — opencode reads Claude Code's
-# copy. Both places are in the home, so neither can be written here.
+# What every agent reads as its global context: what this cell adds to the
+# skills solitary gives every cell — the JUCE toolchain and its licence, Rust,
+# the GPU, the browser and node. One file, which cell-init links into the home
+# for Claude Code and Codex — opencode reads Claude Code's copy. Both places
+# are in the home, so neither can be written here.
 COPY --chmod=0644 cell-instructions.md /opt/cell-instructions.md
 
 # Applied at every container start, for the things that have to live in the

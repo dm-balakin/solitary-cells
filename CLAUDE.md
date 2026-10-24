@@ -20,13 +20,15 @@ directory its `Containerfile` sits in, so nothing can be shared between them.
 **A change to either is a change to make to both**, unless it is one of the
 things that genuinely differ. Those are, and only these:
 
-- `cell.yaml` — `description`, the `user: cell` line, `devices:`, three extra
-  `network.allow` entries (`go.dev`, `dl.google.com`, `golang.org`), and
-  `vm.disk` (80GiB against 40GiB). Neither the memory nor port 5173 is one of
-  these any more: both cells forward 5173 and both ask for 6GiB, since neither
-  fits alongside the other in /dev/shm and web-agents crashed at 7
-- `Containerfile` — the Go, qemu/lima and `useradd` blocks, and the extra
-  version checks in the final `RUN`
+- `cell.yaml` — `description`, the `user: cell` line, `devices:`, four extra
+  `network.allow` entries (`go.dev`, `dl.google.com`, `golang.org`,
+  `solitary.balakin.io`), and `vm.disk` (80GiB against 40GiB) with the
+  sentence above `vm:` that says why. Neither the memory nor port 5173 is one
+  of these any more: every cell forwards 5173 and asks for 6GiB, since no two
+  fit alongside each other in /dev/shm and web-agents crashed at 7
+- `Containerfile` — the Go, qemu/lima and `useradd` blocks, the comment on the
+  `cell-instructions.md` `COPY`, and the extra version checks in the final
+  `RUN`
 - `cell-instructions.md` — the virtual machines and Go sections
 - `README.md` — the cell it describes
 

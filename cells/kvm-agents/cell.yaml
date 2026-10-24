@@ -10,8 +10,8 @@ build: ./Containerfile
 # creates the user; solitary maps the cell's home onto it.
 user: cell
 
-# Sets up what has to live in the cell's home — Claude Code's MCP server —
-# then keeps the container alive.
+# Sets up what has to live in the cell's home — Claude Code's MCP server and
+# the note every agent reads — then keeps the container alive.
 command: /usr/local/bin/cell-init; sleep infinity
 
 # gh reads GH_TOKEN. The agents are not here: Claude Code, Codex and opencode all
@@ -71,32 +71,42 @@ network:
     - 1.1.1.1
 
   allow:
-    - anthropic.com          # Claude Code: api, console, telemetry
-    - claude.ai              # signing in
-    - claude.com             # what Claude Code reaches for docs and account
-    - chatgpt.com            # Codex
-    - openai.com             # and the auth and api hosts behind it
-    - opencode.ai            # opencode: signing in, the subscription's api, models
-    - mcp.context7.com       # the context7 MCP server, for Claude Code
-    - github.com             # gh, git clones, releases, the apt repo for gh
-    - githubusercontent.com  # raw scripts and release assets
-    - npmjs.org              # npm, and what mason installs from it
-    - nodejs.org             # the node nvm installs
-    - ubuntu.com             # apt
-    - docker.io              # the base image
-    - docker.com             # and the CDN it is served from
-    - go.dev                 # the go toolchain's download page
-    - dl.google.com          # and the tarball it redirects to
-    - golang.org             # the module proxy and the checksum database
-    - cdn.playwright.dev     # the chromium build playwright downloads
+    - anthropic.com # Claude Code: api, console, telemetry
+    - claude.ai # signing in
+    - claude.com # what Claude Code reaches for docs and account
+    - chatgpt.com # Codex
+    - openai.com # and the auth and api hosts behind it
+    - opencode.ai # opencode: signing in, the subscription's api, models
+    - mcp.context7.com # the context7 MCP server, for Claude Code
+    - github.com # gh, git clones, releases, the apt repo for gh
+    - githubusercontent.com # raw scripts and release assets
+    - npmjs.org # npm, and what mason installs from it
+    - nodejs.org # the node nvm installs
+    - ubuntu.com # apt
+    - docker.io # the base image
+    - docker.com # and the CDN it is served from
+    - go.dev # the go toolchain's download page
+    - dl.google.com # and the tarball it redirects to
+    - golang.org # the module proxy and the checksum database
+    - cdn.playwright.dev # the chromium build playwright downloads
     - storage.googleapis.com # which is where that download redirects
-    - solitary.balakin.io    # solitary's own docs site and install script
+    - solitary.balakin.io # solitary's own docs site and install script
 
 # A bigger disk than its siblings', because a guest booted in here comes out of
-# this: its memory is this machine's memory and its disk is this disk. Memory
-# is the ceiling on the host rather than a preference — a machine's memory is a
-# file on the host's /dev/shm, which holds 7.6GiB here, so no two of the three
-# cells can be up at once.
+# this: its memory is this machine's memory and its disk is this disk.
+#
+# Memory is the ceiling on the host rather than a preference: a machine's
+# memory is a file on the host's /dev/shm, and this host mounts 7.6GiB of it.
+# A machine larger than the mount starts, reports itself running and then dies
+# with no error, so more than the mount means raising /dev/shm first.
+#
+# 7 fit until the image gained a browser, and then it did not: the margin was
+# the ~200MiB between a 7GiB memory file and the mount, and Playwright's
+# download and unzip are the first thing in the build that makes the guest
+# touch nearly all of its RAM. The host cannot back the next page, and the
+# guest takes it as a machine check while clearing one — qemu prints a register
+# dump, stops, and Lima goes on reporting the machine as running. 6 leaves
+# enough room that the build finishes.
 vm:
   cpus: 4
   memory: 6GiB
