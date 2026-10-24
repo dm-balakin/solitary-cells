@@ -101,6 +101,10 @@ and do not weaken those `.gitignore` lines. When `config.yaml` gains a field,
 ## Conventions
 
 - Conventional Commits. No AI attribution trailers.
+- No branches and no pull requests: commit on `main` and push `main`. This
+  directory is the live configuration `solitary` reads, so a commit sitting on
+  a branch is a change the cells are already running without anyone having
+  agreed to it.
 - Comments explain why a thing is the way it is, not what the code does — both
   `Containerfile`s and both `cell.yaml`s are written that way throughout, and
   the prose is load-bearing. Match that register.
